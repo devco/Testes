@@ -24,151 +24,58 @@ class Junit implements OutputInterface
      */
     public function render(TestInterface $test)
     {
-        $str  = '<testsuites>';
-        $str .= PHP_EOL;
-        $str .= $this->renderTestSuites($test);
-        $str .= PHP_EOL;
-        $str .= '</testsuite>';
-        $str .= PHP_EOL;
-        return $str;
-    }
-    
-    /** 
-     * Renders the test suites' output.
-     * 
-     * @param TestInterface $test The test to output.
-     * 
-     * @return string
-     */
-    private function renderTestSuites(TestInterface $test)
-    {
-        $str = $this->renderTestSuite($test);
-        return $str;
-    }
-    
-    /**
-     * Renders the test suite output.
-     * 
-     * @param TestInterface $test The test to output.
-     * 
-     * @return string
-     */
-    private function renderTestSuite(TestInterface $test)
-    {
-        $str  = '    <testsuite errors="' . count($test->getExceptions()) . '" failures="' . count($test->getFailedAssertions()) . '">';
-        $str .= PHP_EOL;
-        if ($rendered = $this->renderProperties($test)) {
-            $str .= $rendered;
-            $str .= PHP_EOL;
-        }
-        $str .= $this->renderTestCases($test->getTests());
-        if ($rendered = $this->renderSystemOut($test)) {
-            $str .= $rendered;
-            $str .= PHP_EOL;
-        }
-        if ($rendered = $this->renderSystemErr($test)) {
-            $str .= $rendered;
-            $str .= PHP_EOL;
-        }
-        $str .= '    </testsuite>';
-        return $str;
-    }
-    
-    /**
-     * Renders the test suite property.
-     * 
-     * @param TestInterface $test The test to output.
-     * 
-     * @return string
-     */
-    private function renderProperties(TestInterface $test)
-    {
+        $dom = new \DOMDocument;
+        $dom->formatOutput = true;
         
-    }
-    
-    /**
-     * Renders a single test suite property.
-     * 
-     * @param string $property The property to render.
-     * 
-     * @return string
-     */
-    private function renderProperty($property)
-    {
+        $suitesElement = $dom->createElement('testsuites');
+        $dom->appendChild($suitesElement);
         
-    }
-    
-    /**
-     * Renders a single test suite's cases.
-     * 
-     * @param array $tests The tests to render.
-     * 
-     * @return string
-     */
-    private function renderTestCases(array $tests)
-    {
-        $str  = '        <testcases>';
-        $str .= PHP_EOL;
-        foreach ($tests as $test) {
-            $str .= '            ' . $this->renderTestCase($test);
-            $str .= PHP_EOL;
+        $testClass    = get_class($test);
+        $suiteElement = $dom->createElement('testsuite');
+        $suiteElement->setAttribute('package', dirname($testClass));
+        $suiteElement->setAttribute('id', 0);
+        $suiteElement->setAttribute('name', basename($testClass));
+        $suiteElement->setAttribute('errors', count($test->getExceptions()));
+        $suiteElement->setAttribute('failures', count($test->getFailedAssertions()));
+        $suiteElement->setAttribute('timestamp', date('Y-m-d\TH:i:s', $test->getStartTime()));
+        $suiteElement->setAttribute('hostname', gethostname());
+        $suiteElement->setAttribute('tests', count($test->getTests()));
+        $suiteElement->setAttribute('time', $test->getTime());
+        $suitesElement->appendChild($suiteElement);
+        
+        foreach ($test->getTests() as $subtest) {
+            $testcaseClass   = get_class($subtest);
+            $testcaseElement = $dom->createElement('testcase');
+            $testcaseElement->setAttribute('classname', get_class($subtest));
+            $testcaseElement->setAttribute('name', basename($testcaseClass));
+            $testcaseElement->setAttribute('time', $subtest->getTime());
+            $suiteElement->appendChild($testcaseElement);
+            
+            foreach ($subtest->getFailedAssertions() as $failed) {
+                $failedElement = $dom->createElement('failure');
+                $failedElement->setAttribute('message', $failed->getMessage());
+                $failedElement->setAttribute('type', get_class($failed));
+                $testcaseElement->appendChild($failedElement);
+            }
+            
+            foreach ($subtest->getExceptions() as $exception) {
+                $exceptionElement = $dom->createElement('error');
+                $exceptionElement->setAttribute('message', $exception->getMessage());
+                $exceptionElement->setAttribute('type', get_class($exception));
+                $testcaseElement->appendChild($exceptionElement);
+            }
         }
-        $str .= '        </testcases>';
-        $str .= PHP_EOL;
-        return $str;
-    }
-    
-    /**
-     * Renders a single test case from the suite's cases.
-     * 
-     * @param TestInterface $test The test to output.
-     * 
-     * @return string
-     */
-    private function renderTestCase(TestInterface $test)
-    {
-        $str  = '<testcase';
-        $str .= ' classname="' . get_class($test) . '"';
-        $str .= ' name="' . get_class($test) . '"';
-        $str .= ' time="' . $test->getTime() . '"';
-        $str .= ' memory="' . $test->getMemory() . '"';
-        $str .= ' />';
-        return $str;
-    }
-    
-    /**
-     * Renders the system standard output.
-     * 
-     * @param TestInterface $test The test to output.
-     * 
-     * @return string
-     */
-    private function renderSystemOut(TestInterface $test)
-    {
-        $cli = new Cli;
-        $str = '        <system-out><![CDATA[';
-        if ($rendered = $cli->renderAssertions($test)) {
-            $str .= $rendered;
-        }
-        $str .= ']]></system-out>';
-        return $str;
-    }
-    
-    /**
-     * Renders the system error output.
-     * 
-     * @param TestInterface $test The test to output.
-     * 
-     * @return string
-     */
-    private function renderSystemErr(TestInterface $test)
-    {
-        $cli = new Cli;
-        $str = '        <system-err><![CDATA[';
-        if ($rendered = $cli->renderExceptions($test)) {
-            $str .= $rendered;
-        }
-        $str .= ']]></system-err>';
-        return $str;
+        
+        $cliRenderer      = new Cli;
+        $systemOutElement = $dom->createElement('system-out');
+        $systemOutCdata   = $dom->createCDATASection($cliRenderer->renderAssertions($test));
+        $systemErrElement = $dom->createElement('system-err');
+        $systemErrCdata   = $dom->createCDATASection($cliRenderer->renderExceptions($test));
+        $systemOutElement->appendChild($systemOutCdata);
+        $systemErrElement->appendChild($systemErrCdata);
+        $suiteElement->appendChild($systemOutElement);
+        $suiteElement->appendChild($systemErrElement);
+        
+        return $dom->saveXML();
     }
 }
