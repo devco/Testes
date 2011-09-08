@@ -3,7 +3,9 @@
 namespace Testes;
 
 /**
- * Base test class. Subclasses need only implement test methods.
+ * Base test class. Subclasses need only implement test methods. Test methods are any public methods that aren't one of
+ * the following:
+ * - 
  * 
  * @category UnitTesting
  * @package  Testes
@@ -38,6 +40,7 @@ abstract class Test extends TestAbstract
      */
     public function getMethods()
     {
+        // exclude any methods from the interfaces
         $exclude = array();
         $include = array();
         $self    = new \ReflectionClass($this);
@@ -58,12 +61,15 @@ abstract class Test extends TestAbstract
                 continue;
             }
 
+            // exclude particular methods
             $method = $method->getName();
             if (in_array($method, $exclude)) {
                 continue;
             }
             $include[] = $method;
         }
+        
+        // make sure no duplicates are returned
         return array_unique($include);
     }
 }
