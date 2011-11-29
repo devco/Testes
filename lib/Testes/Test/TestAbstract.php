@@ -1,6 +1,8 @@
 <?php
 
-namespace Testes;
+namespace Testes\Test;
+use Testes\Assertion\Assertion;
+use Testes\Assertion\AssertionInterface;
 
 /**
  * Abstract test class that implements all methods for test suites and base class.

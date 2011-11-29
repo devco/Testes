@@ -1,6 +1,6 @@
 <?php
 
-use Testes\Suite;
+use Testes\Test\Suite;
 
 /**
  * The test class created to test basic functionality of the Testes

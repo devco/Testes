@@ -1,6 +1,7 @@
 <?php
 
-namespace Testes;
+namespace Testes\Renderer;
+use Testes\Test\TestInterface;
 
 /**
  * Main interface for output renderers.
@@ -10,7 +11,7 @@ namespace Testes;
  * @author   Trey Shugart <treshugart@gmail.com>
  * @license  Copyright (c) 2010 Trey Shugart http://europaphp.org/license
  */
-interface OutputInterface
+interface RendererInterface
 {
     /**
      * Renders the test results.

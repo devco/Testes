@@ -1,6 +1,6 @@
 <?php
 
-namespace Testes;
+namespace Testes\Autoloader;
 
 /**
  * The autoloader.
@@ -98,7 +98,7 @@ class Autoloader
     private static function registerFramework()
     {
         if (!self::$frameworkPath) {
-            self::$frameworkPath = realpath(dirname(__FILE__) . '/../');
+            self::$frameworkPath = realpath(dirname(__FILE__) . '/../../');
         }
     }
 
@@ -110,7 +110,7 @@ class Autoloader
     private static function registerAutoload()
     {
         if (!self::$isRegistered) {
-            spl_autoload_register(array('\\' . self::NS . '\Autoloader', 'autoload'));
+            spl_autoload_register(array(__NAMESPACE__ . '\Autoloader', 'autoload'));
             self::$isRegistered = true;
         }
     }

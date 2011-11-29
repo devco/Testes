@@ -1,8 +1,8 @@
 <?php
 
-namespace Testes\Output;
-use Testes\OutputInterface;
-use Testes\TestInterface;
+namespace Testes\Renderer;
+use Testes\Renderer\RendererInterface;
+use Testes\Test\TestInterface;
 
 /**
  * Renders the test output in html format.
@@ -12,7 +12,7 @@ use Testes\TestInterface;
  * @author   Trey Shugart <treshugart@gmail.com>
  * @license  Copyright (c) 2010 Trey Shugart http://europaphp.org/license
  */
-class Html implements OutputInterface
+class Html implements RendererInterface
 {
     /**
      * Renders the test results.

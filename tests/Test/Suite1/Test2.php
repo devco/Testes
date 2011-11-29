@@ -1,7 +1,7 @@
 <?php
 
 namespace Test\Suite1;
-use Testes\Test;
+use Testes\Test\Test;
 
 class Test2 extends Test
 {

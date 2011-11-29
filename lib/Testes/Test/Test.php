@@ -1,6 +1,6 @@
 <?php
 
-namespace Testes;
+namespace Testes\Test;
 
 /**
  * Base test class. Subclasses need only implement test methods. Test methods are any public methods that aren't one of

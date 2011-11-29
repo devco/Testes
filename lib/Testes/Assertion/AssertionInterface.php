@@ -1,6 +1,6 @@
 <?php
 
-namespace Testes;
+namespace Testes\Assertion;
 
 /**
  * Assertion interface that makes sure an assertion can be added to a test.

@@ -1,6 +1,7 @@
 <?php
 
-namespace Testes;
+namespace Testes\Test;
+use Testes\Assertion\AssertionInterface;
 
 /**
  * Interface that all suites and tests must implement.

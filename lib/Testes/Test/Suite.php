@@ -1,6 +1,6 @@
 <?php
 
-namespace Testes;
+namespace Testes\Test;
 
 /**
  * Base test class for test cases and test suites. Subclasses need only to implement setting up and tearing down if

@@ -1,8 +1,8 @@
 <?php
 
-namespace Testes\Output;
-use Testes\OutputInterface;
-use Testes\TestInterface;
+namespace Testes\Renderer;
+use Testes\Renderer\RendererInterface;
+use Testes\Test\TestInterface;
 
 /**
  * Renders the test output in command-line format.
@@ -12,7 +12,7 @@ use Testes\TestInterface;
  * @author   Trey Shugart <treshugart@gmail.com>
  * @license  Copyright (c) 2010 Trey Shugart http://europaphp.org/license
  */
-class Cli implements OutputInterface
+class Cli implements RendererInterface
 {
     /**
      * Renders the test results.
@@ -23,12 +23,15 @@ class Cli implements OutputInterface
      */
     public function render(TestInterface $test)
     {
-        $str = $this->renderAssertions($test);
+        $str  = $this->renderAssertions($test);
         $str .= PHP_EOL;
-        $str .= PHP_EOL;
-        $str .= $this->renderExceptions($test);
-        $str .= PHP_EOL;
-        $str .= PHP_EOL;
+        
+        if ($exceptions = $this->renderExceptions($test)) {
+            $str .= PHP_EOL;
+            $str .= $exceptions;
+            $str .= PHP_EOL;
+        }
+        
         return $str;
     }
     
