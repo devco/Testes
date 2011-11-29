@@ -1,7 +1,7 @@
 Introduction
 ------------
 
-Testes - pardon my French - is a dead-simple unit test framework written in PHP. Its goal is to facilitate simple, fast and maintainable way of testing.
+Testes - pardon my French - is a dead-simple unit test framework written in PHP. Its goal is to facilitate a simple, fast and maintainable way of testing.
 
 Setup
 -----
