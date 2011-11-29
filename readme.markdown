@@ -179,10 +179,6 @@ Currently coverage analysis is experimental. The API does work, but may be subje
     // stop coverage
     $coverage = $coverage->stop();
     
-    // output the results in cli format
-    $renderer = new \Testes\Renderer\Cli;
-    echo $renderer->render($tests);
-    
     // analyze and output code coverage
     $analyzer = new \Testes\Coverage\Analyzer($coverage);
     $analyzer->addDirectory('/path/containing/files/being/tested');
