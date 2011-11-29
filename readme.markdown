@@ -6,14 +6,16 @@ Testes - pardon my French - is a dead-simple unit test framework written in PHP.
 Setup
 -----
 
-To set up Testes, you need to register your test directory.
+To set up Testes, you need to register your test directory:
 
     <?php
     
-    require '../lib/Testes/Autoloader.php';
-    \Testes\Autoloader::register('/path/to/test/directory');
+    require '../lib/Testes/Autoloader/Autoloader.php';
+    \Testes\Autoloader\Autoloader::register('/path/to/test/directory');
 
-After that, you just need to setup your test hierarchy. For every directory of tests, Testes requires that you create a corresponding test suite, even if it is empty. This may be optional in the future.
+The autoloader automatically takes care of autoloading library files and uses `spl_autoload_register` so it can play nice with others.
+
+After that, you just need to setup your test hierarchy. For every directory of tests you are required to create a corresponding test suite (may be optional in the future).
 
 - tests
     - Test.php
