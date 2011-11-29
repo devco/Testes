@@ -125,6 +125,7 @@ Why isn't there 1,000,000 different assertion methods to choose from?
 Because there isn't much point in bloating an API and writing a heap of different methods that - in the end - just do the same thing.
 
 Running Tests
+-------------
 
 Running all tests is simple. All you do is instantiate the root test suite and call `run()` on it:
 
