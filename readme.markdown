@@ -109,11 +109,6 @@ You cannot define test methods as part of a test suite. They must exist in a tes
 Asserting
 ---------
 
-Assertion methods are just wrappers for instantiating assertion objects. These classes are:
-
-- Testes_UnitTest_Assertion : Testes_Exception
-- Testes_UnitTest_FatalAssertion : Testes_UnitTest_Assertion
-
 Your test class comes with a single assertion method along with a method for triggering a fatal assertion:
 
 ### \Testes\Test->assert ( *bool* $expression [, *string* $message ] );
