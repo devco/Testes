@@ -11,7 +11,7 @@ To set up Testes, you need to register your test directory:
     <?php
     
     require '../lib/Testes/Autoloader/Autoloader.php';
-    \Testes\Autoloader\Autoloader::register('/path/to/test/directory');
+    \Testes\Autoloader\Autoloader::register('./tests');
 
 The autoloader automatically takes care of autoloading library files and uses `spl_autoload_register` so it can play nice with others.
 
