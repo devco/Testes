@@ -162,3 +162,38 @@ If you need to customize your output, you can use the built-in API as you see fi
             // return output
         }
     }
+
+Code Coverage
+-------------
+
+Currently coverage analysis is experimental. The API does work, but may be subject to some change over the next few months. Still, that doesn't mean it needs to be hard to get some info from your tests:
+
+    // start covering tests
+    $coverage = new \Testes\Coverage\Coverage;
+    $coverage->start();
+    
+    // run the tests
+    $tests = new Test;
+    $tests->run();
+    
+    // stop coverage
+    $coverage = $coverage->stop();
+    
+    // output the results in cli format
+    $renderer = new \Testes\Renderer\Cli;
+    echo $renderer->render($tests);
+    
+    // analyze and output code coverage
+    $analyzer = new \Testes\Coverage\Analyzer($coverage);
+    $analyzer->addDirectory('/path/containing/files/being/tested');
+    echo 'Coverage: '
+        . $analyzer->getPercentage()
+        . '% of lines across '
+        . count($analyzer->getTestedFiles())
+        . ' of '
+        . (count($analyzer->getTestedFiles()) + count($analyzer->getUntestedFiles()))
+        . ' files.';
+
+The above will output something like:
+
+    Coverage: 15% of lines across 10 of 20 files.
