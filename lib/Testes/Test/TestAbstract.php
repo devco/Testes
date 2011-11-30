@@ -139,6 +139,16 @@ abstract class TestAbstract implements TestInterface
     {
         return $this->time;
     }
+
+    public function getStartTime()
+    {
+        return $this->startTime;
+    }
+
+    public function getStopTime()
+    {
+        return $this->stopTime;
+    }
     
     /**
      * Returns the peak amount of memory that was used during the test.
@@ -148,6 +158,16 @@ abstract class TestAbstract implements TestInterface
     public function getMemory()
     {
         return $this->memory;
+    }
+
+    public function getStartMemory()
+    {
+        return $this->startMemory;
+    }
+
+    public function getStopMemory()
+    {
+        return $this->stopMemory;
     }
     
     /**

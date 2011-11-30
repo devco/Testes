@@ -29,11 +29,13 @@ class Junit implements RendererInterface
         $suitesElement = $dom->createElement('testsuites');
         $dom->appendChild($suitesElement);
         
-        $testClass    = get_class($test);
+        $testClass = get_class($test);
+        $packages  = explode('\\', $testClass);
+
         $suiteElement = $dom->createElement('testsuite');
-        $suiteElement->setAttribute('package', dirname($testClass));
+        $suiteElement->setAttribute('package', $packages[0]);
         $suiteElement->setAttribute('id', 0);
-        $suiteElement->setAttribute('name', basename($testClass));
+        $suiteElement->setAttribute('name', end($packages));
         $suiteElement->setAttribute('errors', count($test->getExceptions()));
         $suiteElement->setAttribute('failures', count($test->getFailedAssertions()));
         $suiteElement->setAttribute('timestamp', date('Y-m-d\TH:i:s', $test->getStartTime()));
@@ -65,15 +67,26 @@ class Junit implements RendererInterface
             }
         }
         
+        // system out
         $cliRenderer      = new Cli;
         $systemOutElement = $dom->createElement('system-out');
-        $systemOutCdata   = $dom->createCDATASection($cliRenderer->renderAssertions($test));
-        $systemErrElement = $dom->createElement('system-err');
-        $systemErrCdata   = $dom->createCDATASection($cliRenderer->renderExceptions($test));
+        $systemOutCdata   = $dom->createCDATASection($cliRenderer->render($test));
         $systemOutElement->appendChild($systemOutCdata);
-        $systemErrElement->appendChild($systemErrCdata);
         $suiteElement->appendChild($systemOutElement);
-        $suiteElement->appendChild($systemErrElement);
+
+        // system err
+        $errors = array();
+        foreach ($test->getExceptions() as $exception) {
+            $errors[] = $exception->getMessage();
+        }
+
+        // only append errors if the exist
+        if ($errors) {
+            $systemErrElement = $dom->createElement('system-err');
+            $systemErrCdata   = $dom->createCDATASection(implode(PHP_EOL, $errors));
+            $systemErrElement->appendChild($systemErrCdata);
+            $suiteElement->appendChild($systemErrElement);
+        }
         
         return $dom->saveXML();
     }

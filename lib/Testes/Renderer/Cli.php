@@ -31,6 +31,10 @@ class Cli implements RendererInterface
             $str .= $exceptions;
             $str .= PHP_EOL;
         }
+
+        $str .= PHP_EOL;
+        $str .= $this->renderTime($test);
+        $str .= PHP_EOL;
         
         return $str;
     }
@@ -90,5 +94,17 @@ class Cli implements RendererInterface
             }
         }
         return trim($str);
+    }
+
+    /**
+     * Renders the time.
+     * 
+     * @return string
+     */
+    public function renderTime(TestInterface $test)
+    {
+        $str  = 'Tests completed in ' . $test->getTime() . ' seconds';
+        $str .= ' using ' . $test->getMemory() . ' bytes of memory.';
+        return $str;
     }
 }
