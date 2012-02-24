@@ -106,7 +106,7 @@ abstract class TestAbstract implements TestInterface
      * 
      * @return \Testes\UnitTest\Test
      */
-    public function assert($expression, $description, $code = Assertion::DEFAULT_CODE)
+    public function assert($expression, $description = null, $code = Assertion::DEFAULT_CODE)
     {
         $this->assertions[] = new Assertion($expression, $description, $code);
         return $this;
