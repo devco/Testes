@@ -1,8 +1,7 @@
 <?php
 
 namespace Testes\Renderer;
-use Testes\Renderer\RendererInterface;
-use Testes\Test\TestInterface;
+use Testes\Test\Reporter\ReporterInterface;
 
 /**
  * Renders the test output in command-line format.
@@ -21,7 +20,7 @@ class Cli implements RendererInterface
      * 
      * @return string
      */
-    public function render(TestInterface $test)
+    public function render(ReporterInterface $test)
     {
         $str  = $this->renderAssertions($test);
         $str .= PHP_EOL;
@@ -46,7 +45,7 @@ class Cli implements RendererInterface
      * 
      * @return string
      */
-    public function renderAssertions(TestInterface $test)
+    public function renderAssertions(ReporterInterface $test)
     {
         $str = '';
         if ($assertions = $test->getFailedAssertions()) {
@@ -77,7 +76,7 @@ class Cli implements RendererInterface
      * 
      * @return string
      */
-    public function renderExceptions(TestInterface $test)
+    public function renderExceptions(ReporterInterface $test)
     {
         $str = '';
         if ($exceptions = $test->getExceptions()) {
@@ -101,7 +100,7 @@ class Cli implements RendererInterface
      * 
      * @return string
      */
-    public function renderTime(TestInterface $test)
+    public function renderTime(ReporterInterface $test)
     {
         $str  = 'Tests completed in ' . $test->getTime() . ' seconds';
         $str .= ' using ' . $test->getMemory() . ' bytes of memory.';

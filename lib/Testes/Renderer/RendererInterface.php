@@ -1,7 +1,7 @@
 <?php
 
 namespace Testes\Renderer;
-use Testes\Test\TestInterface;
+use Testes\Test\Reporter\ReporterInterface;
 
 /**
  * Main interface for output renderers.
@@ -20,5 +20,5 @@ interface RendererInterface
      * 
      * @return string
      */
-    public function render(TestInterface $test);
+    public function render(ReporterInterface $test);
 }

@@ -1,18 +1,18 @@
 <?php
 
-namespace Testes\Test;
+namespace Testes\Test\Type;
+use Testes\Assertion\Assertion;
+use Testes\Assertion\AssertionInterface;
 
 /**
- * Base test class. Subclasses need only implement test methods. Test methods are any public methods that aren't one of
- * the following:
- * - 
+ * Abstract test class that implements all methods for test suites and base class.
  * 
  * @category UnitTesting
  * @package  Testes
  * @author   Trey Shugart <treshugart@gmail.com>
  * @license  Copyright (c) 2010 Trey Shugart http://europaphp.org/license
  */
-abstract class Test extends TestAbstract
+abstract class UnitAbstract extends TypeAbstract
 {
     /**
      * Runs all test methods.
@@ -22,13 +22,9 @@ abstract class Test extends TestAbstract
     public function run()
     {
         $this->setUp();
-        $this->startMemoryCounter();
-        $this->startTimer();
-        foreach ($this->getMethods() as $test) {
-            $this->$test();
+        foreach ($this->getMethods() as $method) {
+            $this->$method();
         }
-        $this->stopTimer();
-        $this->stopMemoryCounter();
         $this->tearDown();
         return $this;
     }
@@ -38,7 +34,7 @@ abstract class Test extends TestAbstract
      * 
      * @return array
      */
-    public function getMethods()
+    private function getMethods()
     {
         // exclude any methods from the interfaces
         $exclude = array();
@@ -52,15 +48,15 @@ abstract class Test extends TestAbstract
         
         // exclude methods
         foreach ($self->getMethods() as $method) {
-        	if (!$method->isPublic()) {
-        		continue;
-        	}
+            if (!$method->isPublic()) {
+                continue;
+            }
             
             // make sure it was delcared by the test class
             if ($method->getDeclaringClass()->getName() !== get_class($this)) {
                 continue;
             }
-
+    
             // exclude particular methods
             $method = $method->getName();
             if (in_array($method, $exclude)) {
