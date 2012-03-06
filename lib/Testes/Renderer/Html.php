@@ -1,8 +1,7 @@
 <?php
 
 namespace Testes\Renderer;
-use Testes\Renderer\RendererInterface;
-use Testes\Test\TestInterface;
+use Testes\RunableInterface;
 
 /**
  * Renders the test output in html format.
@@ -17,11 +16,11 @@ class Html implements RendererInterface
     /**
      * Renders the test results.
      * 
-     * @param TestInterface $test The test to output.
+     * @param RunableInterface $test The test to output.
      * 
      * @return string
      */
-    public function render(TestInterface $test)
+    public function render(RunableInterface $test)
     {
         $cli = new Cli;
         $str = $cli->render($test);

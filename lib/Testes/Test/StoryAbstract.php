@@ -1,6 +1,6 @@
 <?php
 
-namespace Testes\Test\Type;
+namespace Testes\Test;
 
 abstract class StoryAbstract extends UnitAbstract
 {

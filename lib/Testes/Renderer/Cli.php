@@ -1,7 +1,7 @@
 <?php
 
 namespace Testes\Renderer;
-use Testes\Test\Reporter\ReporterInterface;
+use Testes\RunableInterface;
 
 /**
  * Renders the test output in command-line format.
@@ -16,11 +16,11 @@ class Cli implements RendererInterface
     /**
      * Renders the test results.
      * 
-     * @param TestInterface $test The test to output.
+     * @param RunableInterface $test The test to output.
      * 
      * @return string
      */
-    public function render(ReporterInterface $test)
+    public function render(RunableInterface $test)
     {
         $str  = $this->renderAssertions($test);
         $str .= PHP_EOL;
@@ -41,17 +41,19 @@ class Cli implements RendererInterface
     /**
      * Renders the assertions in the test.
      * 
-     * @param TestInterface $test The test to output.
+     * @param RunableInterface $test The test to output.
      * 
      * @return string
      */
-    public function renderAssertions(ReporterInterface $test)
+    public function renderAssertions(RunableInterface $test)
     {
-        $str = '';
-        if ($assertions = $test->getFailedAssertions()) {
+        $str    = '';
+        $failed = $test->getAssertions()->getFailed();
+        
+        if (count($failed)) {
             $str .= 'Failed' . PHP_EOL;
             $str .= '------' . PHP_EOL;
-            foreach ($assertions as $assertion) {
+            foreach ($failed as $assertion) {
                 $str .= $assertion->getTestClass()
                      .  '->'
                      .  $assertion->getTestMethod()
@@ -66,20 +68,23 @@ class Cli implements RendererInterface
         } else {
             $str .= 'All tests passed!';
         }
+        
         return trim($str);
     }
     
     /**
      * Renders the exceptions in the test.
      * 
-     * @param TestInterface $test The test to output.
+     * @param RunableInterface $test The test to output.
      * 
      * @return string
      */
-    public function renderExceptions(ReporterInterface $test)
+    public function renderExceptions(RunableInterface $test)
     {
-        $str = '';
-        if ($exceptions = $test->getExceptions()) {
+        $str        = '';
+        $exceptions = $test->getExceptions();
+        
+        if (count($exceptions)) {
             $str .= 'Errors' . PHP_EOL;
             $str .= '------' . PHP_EOL;
             foreach ($exceptions as $exception) {
@@ -92,6 +97,7 @@ class Cli implements RendererInterface
                 $str .= PHP_EOL;
             }
         }
+        
         return trim($str);
     }
 
@@ -100,7 +106,7 @@ class Cli implements RendererInterface
      * 
      * @return string
      */
-    public function renderTime(ReporterInterface $test)
+    public function renderTime(RunableInterface $test)
     {
         $str  = 'Tests completed in ' . $test->getTime() . ' seconds';
         $str .= ' using ' . $test->getMemory() . ' bytes of memory.';

@@ -33,8 +33,8 @@ class Analyzer
 	public function addDirectory($dir)
 	{
 		foreach ($this->getRecursiveIterator($dir) as $item) {
-			if ($item->isFile()) {
-				$this->addFile($item->getPathname());
+			if ($this->isValidFile($item)) {
+				$this->addFile($item->getRealpath());
 			}
 		}
 		return $this;
@@ -50,7 +50,7 @@ class Analyzer
 		return array_diff($this->files, $this->result->getFiles());
 	}
 
-	public function getPercentage($accuracy = 2)
+	public function getPercentage($accuracy = 2, $includeUntested = true)
 	{
 		$executed   = 0;
 		$unexecuted = 0;
@@ -62,9 +62,11 @@ class Analyzer
 		}
 
 		// add to the unexecuted lines of each
-		foreach ($this->getUntestedFiles() as $file) {
-			//$unexecuted += count(file($file));
-		}
+		if ($includeUntested) {
+    		foreach ($this->getUntestedFiles() as $file) {
+    			$unexecuted += count(file($file));
+    		}
+    	}
 
 		$total   = $executed + $unexecuted;
 		$percent = $executed / $total;
@@ -86,5 +88,17 @@ class Analyzer
             new \RecursiveDirectoryIterator($dir),
             \RecursiveIteratorIterator::SELF_FIRST
         );
+    }
+    
+    /**
+     * Returns whether or not the specified file is valid.
+     * 
+     * @param \SplFileInfo $item The item to check.
+     * 
+     * @return bool
+     */
+    private function isValidFile(\SplFileInfo $item)
+    {
+        return $item->isFile() && !preg_match('/\/\./', $item->getRealpath());
     }
 }

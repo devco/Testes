@@ -1,7 +1,7 @@
 <?php
 
 namespace Testes\Renderer;
-use Testes\Test\Reporter\ReporterInterface;
+use Testes\RunableInterface;
 
 /**
  * Main interface for output renderers.
@@ -16,9 +16,9 @@ interface RendererInterface
     /**
      * Renders the test results.
      * 
-     * @param TestInterface $test The test to output.
+     * @param RunableInterface $finder The finder containing the tests.
      * 
      * @return string
      */
-    public function render(ReporterInterface $test);
+    public function render(RunableInterface $test);
 }

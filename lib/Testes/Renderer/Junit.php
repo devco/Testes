@@ -1,8 +1,7 @@
 <?php
 
 namespace Testes\Renderer;
-use Testes\Renderer\RendererInterface;
-use Testes\Test\TestInterface;
+use Testes\RunableInterface;
 
 /**
  * Renders the test output in JUnit format.
@@ -17,11 +16,11 @@ class Junit implements RendererInterface
     /**
      * Renders the test results.
      * 
-     * @param TestInterface $test The test to output.
+     * @param ReporterInterface $test The test to output.
      * 
      * @return string
      */
-    public function render(TestInterface $test)
+    public function render(RunableInterface $test)
     {
         $dom = new \DOMDocument;
         $dom->formatOutput = true;
@@ -37,7 +36,7 @@ class Junit implements RendererInterface
         $suiteElement->setAttribute('id', 0);
         $suiteElement->setAttribute('name', end($packages));
         $suiteElement->setAttribute('errors', count($test->getExceptions()));
-        $suiteElement->setAttribute('failures', count($test->getFailedAssertions()));
+        $suiteElement->setAttribute('failures', count($test->getAssertions()->getFailed()));
         $suiteElement->setAttribute('timestamp', date('Y-m-d\TH:i:s', $test->getStartTime()));
         $suiteElement->setAttribute('hostname', gethostname());
         $suiteElement->setAttribute('tests', count($test->getTests()));
@@ -52,7 +51,7 @@ class Junit implements RendererInterface
             $testcaseElement->setAttribute('time', $subtest->getTime());
             $suiteElement->appendChild($testcaseElement);
             
-            foreach ($subtest->getFailedAssertions() as $failed) {
+            foreach ($subtest->getAssertions()->getFailed() as $failed) {
                 $failedElement = $dom->createElement('failure');
                 $failedElement->setAttribute('message', $failed->getMessage());
                 $failedElement->setAttribute('type', get_class($failed));
