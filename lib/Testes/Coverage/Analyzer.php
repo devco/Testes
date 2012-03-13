@@ -1,8 +1,17 @@
 <?php
 
 namespace Testes\Coverage;
+use Arrayiterator;
+use Closure;
+use Countable;
+use InvalidArgumentException;
+use IteratorAggregate;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
+use SplFileInfo;
+use SplFileObject;
 
-class Analyzer
+class Analyzer implements Countable, IteratorAggregate
 {
 	private $result;
 
@@ -10,69 +19,133 @@ class Analyzer
 
 	public function __construct(CoverageResult $result)
 	{
+    	$this->files  = new ArrayIterator;
 		$this->result = $result;
+	}
+	
+	public function count()
+	{
+    	return $this->files->count();
+	}
+	
+	public function getIterator()
+	{
+	    return $this->files;
 	}
 
 	public function addFile($file)
 	{
-		// ensure the file exists
-		$real = realpath($file);
-		if (!$real || !is_file($file)) {
-			throw new \InvalidArgumentException("Cannot analyze against non-existent file {$file}.");
-		}
-
-		// append the file
-		$this->files[] = $real;
-
-		// make sure there are no duplicates
-		$this->files = array_unique($this->files);
-
+	    $this->files[] = new File($file, $this->result);
 		return $this;
 	}
 
 	public function addDirectory($dir)
 	{
 		foreach ($this->getRecursiveIterator($dir) as $item) {
-			if ($this->isValidFile($item)) {
-				$this->addFile($item->getRealpath());
+			if ($item->isFile()) {
+				$this->addFile($item);
 			}
 		}
 		return $this;
 	}
-
+	
+	public function is($pattern, $mods = null)
+	{
+    	return $this->filter(function($file) use ($pattern, $mods) {
+    	    return preg_match('#' . $pattern . '#' . $mods, $file->__toString());
+    	});
+	}
+	
+	public function not($pattern, $mods = null)
+	{
+    	return $this->filter(function($file) use ($pattern, $mods) {
+            return !preg_match('#' . $pattern . '#' . $mods, $file->__toString());
+    	});
+	}
+	
+	public function filter(Closure $filter)
+	{
+	    foreach ($this->files as $index => $file) {
+	        if (!$filter($file)) {
+	            unset($this->files[$index]);
+	        }
+	    }
+	    return $this;
+	}
+	
 	public function getTestedFiles()
 	{
-		return array_intersect($this->files, $this->result->getFiles());
+    	$files = new ArrayIterator;
+    	foreach ($this->files as $file) {
+    	    if ($file->tested()) {
+    	        $files[] = $file;
+    	    }
+    	}
+    	return $files;
 	}
-
+	
+	public function getTestedFileCount()
+	{
+    	return $this->getTestedFiles()->count();
+	}
+	
 	public function getUntestedFiles()
 	{
-		return array_diff($this->files, $this->result->getFiles());
-	}
-
-	public function getPercentage($accuracy = 2, $includeUntested = true)
-	{
-		$executed   = 0;
-		$unexecuted = 0;
-
-		// count the executed and unexecuted lines of each tested file
-		foreach ($this->getTestedFiles() as $file) {
-			$executed   += count($this->result->getExecutedLines($file));
-			$unexecuted += count($this->result->getUnexecutedLines($file));
-		}
-
-		// add to the unexecuted lines of each
-		if ($includeUntested) {
-    		foreach ($this->getUntestedFiles() as $file) {
-    			$unexecuted += count(file($file));
-    		}
+    	$files = new ArrayIterator;
+    	foreach ($this->files as $file) {
+        	if (!$file->tested()) {
+            	$files[] = $file;
+        	}
     	}
+    	return $files;
+	}
+	
+	public function getUntestedFileCount()
+	{
+    	return $this->getUntestedFiles()->count();
+	}
+	
+	public function getDeadFiles()
+	{
+    	$files = new ArrayIterator;
+    	foreach ($this->files as $file) {
+        	if ($file->getDeadLineCount()) {
+            	$files[] = $file;
+        	}
+    	}
+    	return $files;
+	}
+	
+	public function getDeadFileCount()
+	{
+    	return $this->getDeadFiles()->count();
+	}
+	
+	public function getLineCount()
+	{
+    	return $this->getSumOf('count');
+    }
+    
+    public function getExecutedLineCount()
+    {
+        return $this->getSumOf('getExecutedLineCount');
+    }
+    
+    public function getUnexecutedLineCount()
+    {
+        return $this->getSumOf('getUnexecutedLineCount');
+    }
+    
+    public function getDeadLineCount()
+    {
+        return $this->getSumOf('getDeadLineCount');
+    }
 
-		$total   = $executed + $unexecuted;
-		$percent = $executed / $total;
-		$percent = $percent * 100;
-
-		return round($percent, $accuracy);
+	public function getPercentTested()
+	{
+	    $sum = $this->getSumOf('getPercentTested');
+	    $all = $this->count() * 100;
+	    return $sum / $all * 100;
 	}
 
 	/**
@@ -80,25 +153,29 @@ class Analyzer
      * 
      * @param string $dir The directory to get the recursive iterator for.
      * 
-     * @return \RecursiveIteratorIterator
+     * @return RecursiveIteratorIterator
      */
     private function getRecursiveIterator($dir)
     {
-        return new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($dir),
-            \RecursiveIteratorIterator::SELF_FIRST
+        return new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($dir),
+            RecursiveIteratorIterator::SELF_FIRST
         );
     }
     
     /**
-     * Returns whether or not the specified file is valid.
+     * Returns the sum of all return values of the specified method on all files.
      * 
-     * @param \SplFileInfo $item The item to check.
+     * @param string $method The method to call
      * 
-     * @return bool
+     * @return int
      */
-    private function isValidFile(\SplFileInfo $item)
+    private function getSumOf($method)
     {
-        return $item->isFile() && !preg_match('/\/\./', $item->getRealpath());
+        $sum = 0;
+        foreach ($this->files as $file) {
+            $sum += $file->$method();
+        }
+        return $sum;
     }
 }

@@ -1,6 +1,7 @@
 <?php
 
 namespace Testes\Coverage;
+use InvalidArgumentException;
 
 class CoverageResult
 {
@@ -17,20 +18,9 @@ class CoverageResult
         $this->result = $result;
     }
 
-    public function getFiles()
-    {
-        return array_keys($this->result);
-    }
-
-    public function getLines($file)
-    {
-    	$this->ensureFile($file);
-    	return array_keys($this->result[$file]);
-    }
-
     public function getExecutedLines($file)
     {
-    	return $this->filter($file, self::EXECUTED);
+        return $this->filter($file, self::EXECUTED);
     }
 
     public function getUnexecutedLines($file)
@@ -45,23 +35,47 @@ class CoverageResult
 
     private function filter($file, $flag)
     {
-    	$this->ensureFile($file);
-
+        $this->ensureFile($file);
+        
     	$lines = array();
-    	foreach ($this->result[$file] as $line) {
-    		if ($line === $flag) {
-    			$lines[] = $line;
+    	$files = file($file);
+    	
+    	foreach ($this->result[$file] as $index => $status) {
+    		if ($status === $flag && isset($files[$index])) {
+    			$lines[$index] = $files[$index];
     		}
     	}
 
     	return $lines;
     }
-
+    
     private function ensureFile($file)
     {
-    	if (!isset($this->result[$file])) {
-    		throw new \InvalidArgumentException('The specified file does not exist.');
-    	}
-    	return $this;
+        if (isset($this->result[$file])) {
+            return;
+        }
+        
+        $this->result[$file] = array();
+        foreach (file($file) as $index => $line) {
+            $this->result[$file][$index] = $this->determineDeadOrUnexecuted($line);
+        }
+    }
+    
+    private function determineDeadOrUnexecuted($line)
+    {
+        $line = trim($line);
+        
+        if ($this->isDead($line)) {
+            return self::DEAD;
+        }
+        
+        return self::UNEXECUTED;
+    }
+    
+    private function isDead($line)
+    {
+        return !$line
+            || strpos($line, '/') === 0
+            || preg_match('/^(public|protected|private|final|function|static)\s/', $line);
     }
 }

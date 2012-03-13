@@ -29,20 +29,6 @@ interface RunableInterface extends Countable
     public function tearDown();
     
     /**
-     * Returns whether or not the test passed.
-     * 
-     * @return bool
-     */
-    public function failed();
-    
-    /**
-     * Returns whether or not the test passed.
-     * 
-     * @return bool
-     */
-    public function passed();
-    
-    /**
      * Starts the reporter.
      * 
      * @return Reporter

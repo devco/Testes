@@ -1,11 +1,12 @@
 <?php
 
 namespace Testes\Assertion;
+use Countable;
 use ArrayIterator;
 use IteratorAggregate;
 use Traversable;
 
-class Set implements IteratorAggregate
+class Set implements Countable, IteratorAggregate
 {
     private $assertions;
     
@@ -64,6 +65,11 @@ class Set implements IteratorAggregate
             }
         }
         return $passed;
+    }
+    
+    public function count()
+    {
+        return $this->assertions->count();
     }
     
     public function getIterator()

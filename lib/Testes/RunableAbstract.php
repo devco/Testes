@@ -8,6 +8,20 @@ use Traversable;
 abstract class RunableAbstract implements RunableInterface
 {
     /**
+     * The name of the test.
+     * 
+     * @return string
+     */
+    private $name;
+    
+    /**
+     * The package this test is in.
+     * 
+     * @return string
+     */
+    private $package;
+    
+    /**
      * The time it took for the test to run.
      * 
      * @var int
@@ -55,34 +69,6 @@ abstract class RunableAbstract implements RunableInterface
      * @var int
      */
     private $peakMemory = 0;
-
-    /**
-     * All assertions.
-     * 
-     * @var array
-     */
-    private $assertions = array();
-
-    /**
-     * All failed assertions.
-     * 
-     * @var array
-     */
-    private $failedAssertions = array();
-
-    /**
-     * All passed assertions.
-     * 
-     * @var array
-     */
-    private $passedAssertions = array();
-
-    /**
-     * All exceptions.
-     * 
-     * @var array
-     */
-    private $exceptions = array();
     
     /**
      * Sets up the test.
@@ -105,28 +91,49 @@ abstract class RunableAbstract implements RunableInterface
     }
     
     /**
-     * Returns whether or not the test passed.
+     * Sets the name of the runable.
      * 
-     * @return bool
+     * @param string $name The name.
+     * 
+     * @return RunableAbstract
      */
-    public function failed()
+    public function setName($name)
     {
-        return !$this->passed();
+        $this->name = $name;
+        return $this;
     }
     
     /**
-     * Returns whether or not the test passed.
+     * Returns the name of the runable.
      * 
-     * @return bool
+     * @return string
      */
-    public function passed()
+    public function getName()
     {
-        foreach ($this->assertions as $assertion) {
-            if ($assertion->failed()) {
-                return false;
-            }
-        }
-        return true;
+        return $this->name ? $this->name : get_class($this);
+    }
+    
+    /**
+     * Sets the package of the runable.
+     * 
+     * @param string $package The package.
+     * 
+     * @return RunableAbstract
+     */
+    public function setPackage($package)
+    {
+        $this->package = $package;
+        return $this;
+    }
+    
+    /**
+     * Returns the package of the runable.
+     * 
+     * @return string
+     */
+    public function getPackage()
+    {
+        return $this->package ? $this->package : get_class($this);
     }
 
     /**

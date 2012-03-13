@@ -2,6 +2,8 @@
 
 namespace Testes\Renderer;
 use Testes\RunableInterface;
+use Testes\Suite\Suite;
+use Testes\Test\TestInterface;
 
 /**
  * Renders the test output in JUnit format.
@@ -27,6 +29,8 @@ class Junit implements RendererInterface
         
         $suitesElement = $dom->createElement('testsuites');
         $dom->appendChild($suitesElement);
+        
+        $test = $this->ensureSuite($test);
         
         $testClass = get_class($test);
         $packages  = explode('\\', $testClass);
@@ -88,5 +92,16 @@ class Junit implements RendererInterface
         }
         
         return $dom->saveXML();
+    }
+    
+    private function ensureSuite(RunableInterface $test)
+    {
+        if ($test instanceof TestInterface) {
+            $temp = $test;
+            $test = new Suite;
+            $test->addTest($temp);
+            unset($temp);
+        }
+        return $test;
     }
 }

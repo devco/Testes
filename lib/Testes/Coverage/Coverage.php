@@ -20,9 +20,21 @@ class Coverage
 		xdebug_start_code_coverage(XDEBUG_CC_UNUSED | XDEBUG_CC_DEAD_CODE);
 		return $this;
 	}
-
+	
+	public function pause()
+	{
+		xdebug_stop_code_coverage(false);
+		return $this;
+	}
+	
 	public function stop()
 	{
-		return new CoverageResult(xdebug_get_code_coverage(true));
+		xdebug_stop_code_coverage();
+		return $this;
+	}
+
+	public function analyze()
+	{
+		return new Analyzer(new CoverageResult(xdebug_get_code_coverage(true)));
 	}
 }
