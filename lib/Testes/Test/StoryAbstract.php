@@ -1,6 +1,7 @@
 <?php
 
 namespace Testes\Test;
+use LogicException;
 
 abstract class StoryAbstract extends UnitAbstract
 {
@@ -27,6 +28,11 @@ abstract class StoryAbstract extends UnitAbstract
 		// format the method
 		$method = $this->format($method);
 		$method = $type . $method;
+		
+		// check if the method exists
+		if (!method_exists($this, $method)) {
+		    throw new LogicException('You did not define a test method for "' . $method . '".');
+		}
 		
 		// call the method
 		call_user_func_array(array($this, $method), $args);

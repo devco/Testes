@@ -9,11 +9,19 @@ class File implements Countable, IteratorAggregate
 {
     private $file;
     
-    private $split;
+    private $lines;
     
-    private $coverage;
+    private $tested;
     
-    public function __construct($file, CoverageResult $coverage)
+    private $untested;
+    
+    private $dead;
+    
+    private $ignored;
+    
+    private $result;
+    
+    public function __construct($file, CoverageResult $result)
     {
         $real = realpath($file);
         
@@ -22,8 +30,14 @@ class File implements Countable, IteratorAggregate
         }
         
         $this->file     = $real;
-        $this->split    = new ArrayIterator(file($this->file));
-        $this->coverage = $coverage;
+        $this->lines    = new ArrayIterator;
+        $this->tested   = new ArrayIterator;
+        $this->untested = new ArrayIterator;
+        $this->dead     = new ArrayIterator;
+        $this->ignored  = new ArrayIterator;
+        $this->result   = $result;
+        
+        $this->buildLines();
     }
     
     public function __toString()
@@ -33,53 +47,78 @@ class File implements Countable, IteratorAggregate
     
     public function getIterator()
     {
-        return new $this->split;
+        return new $this->lines;
     }
     
     public function count()
     {
-        return count(file($this->file));
+        return $this->lines->count();
     }
     
-    public function tested()
+    public function isTested()
     {
-        return $this->getUnexecutedLineCount() === 0;
+        return $this->untested->count() === 0;
     }
     
-    public function getExecutedLines()
+    public function isUntested()
     {
-        return $this->coverage->getExecutedLines($this->file);
+        return $this->untested->count() > 0;
     }
     
-    public function getExecutedLineCount()
+    public function isDead()
     {
-        return count($this->getExecutedLines());
+        return $this->dead->count() === $this->line->count();
     }
     
-    public function getUnexecutedLines()
+    public function isIgnored()
     {
-        return $this->coverage->getUnexecutedLines($this->file);
+        return $this->ignored->count() === $this->line->count();
     }
     
-    public function getUnexecutedLineCount()
+    public function getTestedLines()
     {
-        return count($this->getUnexecutedLines());
+        return $this->tested;
+    }
+    
+    public function getUntestedLines()
+    {
+        return $this->untested;
     }
     
     public function getDeadLines()
     {
-        return $this->coverage->getDeadLines($this->file);
+        return $this->dead;
+    }
+    
+    public function getIgnoredLines()
+    {
+        return $this->ignored;
+    }
+    
+    public function getTestedLineCount()
+    {
+        return $this->tested->count();
+    }
+    
+    public function getUntestedLineCount()
+    {
+        return $this->untested->count();
     }
     
     public function getDeadLineCount()
     {
-        return count($this->getDeadLines());
+        return $this->dead->count();
+    }
+    
+    public function getIgnoredLineCount()
+    {
+        return $this->ignored->count();
     }
     
     public function getPercentTested()
     {
-        $tested   = $this->getExecutedLineCount();
-        $untested = $this->getUnexecutedLineCount();
+        $tested   = $this->getTestedLineCount();
+        $untested = $this->getUntestedLineCount();
         $total    = $tested + $untested;
         
         if (!$untested) {
@@ -91,5 +130,29 @@ class File implements Countable, IteratorAggregate
         }
         
         return $tested / $total * 100;
+    }
+    
+    private function buildLines()
+    {
+        foreach (file($this->file) as $num => $line) {
+            ++$num;
+            
+            $status = $this->result->line($this->file, $num);
+            $line   = new Line($line, $num, $status);
+            
+            // add to all lines
+            $this->lines->offsetSet($num, $line);
+            
+            // detect type of line
+            if ($line->isTested()) {
+                $this->tested->offsetSet(null, $line);
+            } elseif ($line->isUntested()) {
+                $this->untested->offsetSet(null, $line);
+            } elseif ($line->isDead()) {
+                $this->dead->offsetSet(null, $line);
+            } elseif ($line->isIgnored()) {
+                $this->ignored->offsetSet(null, $line);
+            }
+        }
     }
 }

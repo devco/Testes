@@ -10,10 +10,11 @@ use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use SplFileInfo;
 use SplFileObject;
+use UnexpectedValueException;
 
 class Analyzer implements Countable, IteratorAggregate
 {
-	private $result;
+    private $result;
 
 	private $files = array();
 
@@ -35,8 +36,25 @@ class Analyzer implements Countable, IteratorAggregate
 
 	public function addFile($file)
 	{
-	    $this->files[] = new File($file, $this->result);
+	    $this->files->offsetSet(null, new File($file, $this->result));
 		return $this;
+	}
+	
+	public function removeFile($file)
+	{
+    	if (!is_file($file)) {
+        	throw new UnexpectedValueException('Unable to remove the file because "' . $file . '" is not a file.');
+    	}
+    	
+    	$real = realpath($file);
+    	foreach ($this->files as $index => $file) {
+        	if ($file->__toString() === $real) {
+            	$this->files->offsetUnset($index);
+            	break;
+        	}
+    	}
+    	
+    	return $this;
 	}
 
 	public function addDirectory($dir)
@@ -47,6 +65,22 @@ class Analyzer implements Countable, IteratorAggregate
 			}
 		}
 		return $this;
+	}
+	
+	public function removeDirectory($dir)
+	{
+    	if (!is_dir($dir)) {
+        	throw new UnexpectedValueException('Unable to remove directory because "' . $dir . '" is not a directory.');
+    	}
+    	
+    	$real = realpath($dir);
+    	foreach ($this->files as $index => $file) {
+        	if (strpos($file->__toString(), $real) === 0) {
+            	$this->files->offsetUnset($index);
+        	}
+    	}
+    	
+    	return $this;
 	}
 	
 	public function is($pattern, $mods = null)
@@ -77,24 +111,30 @@ class Analyzer implements Countable, IteratorAggregate
 	{
     	$files = new ArrayIterator;
     	foreach ($this->files as $file) {
-    	    if ($file->tested()) {
-    	        $files[] = $file;
+    	    if ($file->isTested()) {
+    	        $files->offsetSet(null, $file);
     	    }
     	}
     	return $files;
-	}
-	
-	public function getTestedFileCount()
-	{
-    	return $this->getTestedFiles()->count();
 	}
 	
 	public function getUntestedFiles()
 	{
     	$files = new ArrayIterator;
     	foreach ($this->files as $file) {
-        	if (!$file->tested()) {
-            	$files[] = $file;
+        	if ($file->isUntested()) {
+            	$files->offsetSet(null, $file);
+        	}
+    	}
+    	return $files;
+	}
+	
+	public function getDeadFiles()
+	{
+    	$files = new ArrayIterator;
+    	foreach ($this->files as $file) {
+        	if ($file->isDead()) {
+            	$files->offsetSet(null, $file);
         	}
     	}
     	return $files;
@@ -102,23 +142,17 @@ class Analyzer implements Countable, IteratorAggregate
 	
 	public function getUntestedFileCount()
 	{
-    	return $this->getUntestedFiles()->count();
+	    return $this->getUntestedFiles()->count();
 	}
-	
-	public function getDeadFiles()
+
+	public function getTestedFileCount()
 	{
-    	$files = new ArrayIterator;
-    	foreach ($this->files as $file) {
-        	if ($file->getDeadLineCount()) {
-            	$files[] = $file;
-        	}
-    	}
-    	return $files;
+	    return $this->getTestedFiles()->count();
 	}
-	
+
 	public function getDeadFileCount()
 	{
-    	return $this->getDeadFiles()->count();
+	    return $this->getDeadFiles()->count();
 	}
 	
 	public function getLineCount()

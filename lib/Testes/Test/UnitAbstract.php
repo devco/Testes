@@ -131,6 +131,13 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
             }
         }
         
+        // exclude any methods from the traits
+        foreach ($self->getTraits() as $trait) {
+            foreach ($trait->getMethods() as $method) {
+                $exclude[] = $method->getName();
+            }
+        }
+        
         // exclude methods
         foreach ($self->getMethods() as $method) {
             if (!$method->isPublic()) {

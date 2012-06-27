@@ -3,6 +3,8 @@
 namespace Testes\Finder;
 use ArrayIterator;
 use DirectoryIterator;
+use Exception;
+use ReflectionClass;
 use RuntimeException;
 use SplFileInfo;
 use Testes\RunableInterface;
@@ -231,7 +233,15 @@ class Finder implements FinderInterface
 	 */
 	private function isValid(SplFileInfo $item)
 	{
-		return preg_match('/^[^.].+$/', $item->getBasename());
+    	$class = $this->formatFileToClass($item);
+    	
+    	try {
+        	$class = new ReflectionClass($class);
+        } catch (Exception $e) {
+            return false;
+        }
+        
+    	return $class->implementsInterface('\Testes\RunableInterface');
 	}
 	
 	/**
