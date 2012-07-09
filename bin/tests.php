@@ -12,7 +12,7 @@ Autoloader::register();
 Autoloader::addPath($base . '/tests');
 
 $coverage = (new Coverage)->start();
-$suite    = (new Finder($base . '/tests/Test'))->run();
+$suite    = (new Finder($base . '/tests', 'Test'))->run();
 $analyzer = $coverage->stop()->addDirectory($base . '/lib')->is('\.php$');
 
 ?>
