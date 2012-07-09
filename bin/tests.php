@@ -10,15 +10,9 @@ require $base . '/lib/Testes/Autoloader.php';
 
 Autoloader::register();
 
-$analyzer = new Coverage;
-$analyzer->start();
-
-$suite = new Finder($base, $test);
-$suite = $suite->run();
-
-$analyzer = $analyzer->stop();
-$analyzer->addDirectory($base . '/lib');
-$analyzer->is('\.php$');
+$coverage = (new Coverage)->start();
+$suite    = (new Finder($base . '/tests', 'Test'))->run();
+$analyzer = $coverage->stop()->addDirectory($base . '/lib')->is('\.php$');
 
 ?>
 
