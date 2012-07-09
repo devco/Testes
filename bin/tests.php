@@ -1,49 +1,38 @@
 <?php
 
-use Testes\Autoloader;
-use Testes\Coverage\Analyzer;
 use Testes\Coverage\Coverage;
-use Testes\Renderer\Cli;
-use Testes\Test\Finder\Finder;
-use Testes\Test\Reporter\Reporter;
-use Testes\Test\Runner\Runner;
+use Testes\Finder\Finder;
+use Testes\Autoloader;
 
-ini_set('display_errors', 'on');
-error_reporting(E_ALL ^ E_STRICT);
+$base = __DIR__ . '/..';
 
-$lib = dirname(__FILE__) . '/../lib';
+require $base . '/lib/Testes/Autoloader.php';
 
-require $lib . '/Testes/Autoloader.php';
 Autoloader::register();
 
-// start covering tests
-$coverage = new Coverage;
-$coverage->start();
+// so we can get some helpful data
+$analyzer = new Coverage;
+$analyzer->start();
 
-// configure the reporter
-$reporter = new Reporter;
+// re-run the test b/c two xdebug functions can't be run at the same time
+$suite = new Finder($base, $test);
+$suite = $suite->run();
 
-// configure the finder
-$finder = new Finder($lib . '/../tests/Test', 'Test');
+// gather useful data
+$analyzer = $analyzer->stop();
+$analyzer->addDirectory($base . '/lib');
+$analyzer->is('\.php$');
 
-// run the tests
-$tests = new Runner($reporter);
-$tests->run($finder);
+?>
 
-// stop coverage and analyze coverage
-$analyzer = new Analyzer($coverage->stop());
-$analyzer->addDirectory($lib);
+<?php if ($suite->getAssertions()->isPassed()): ?>
+All tests passed!
+<?php else: ?>
+Tests failed:
+<?php foreach ($suite->getAssertions()->getFailed() as $ass): ?>
+  <?php echo $ass->getTestClass(); ?>
+<?php endforeach; ?>
+<?php endif; ?>
 
-// output test results
-$out = new Cli;
-echo $out->render($reporter);
+Coverage: <?php echo $analyzer->getPercentTested(); ?>%
 
-// output coverage
-echo 'Coverage: '
-    . $analyzer->getPercentage()
-    . '% of lines across '
-    . count($analyzer->getTestedFiles())
-    . ' of '
-    . (count($analyzer->getTestedFiles()) + count($analyzer->getUntestedFiles()))
-    . ' files.'
-    . "\n";

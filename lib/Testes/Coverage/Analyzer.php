@@ -175,11 +175,13 @@ class Analyzer implements Countable, IteratorAggregate
         return $this->getSumOf('getDeadLineCount');
     }
 
-	public function getPercentTested()
+	public function getPercentTested($precision = 0)
 	{
-	    $sum = $this->getSumOf('getPercentTested');
-	    $all = $this->count() * 100;
-	    return $sum / $all * 100;
+	    $sum     = $this->getSumOf('getPercentTested');
+	    $all     = $this->count() * 100;
+	    $percent = $sum / $all * 100;
+	    
+	    return round(number_format($percent, $precision), $precision);
 	}
 
 	/**
