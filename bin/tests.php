@@ -10,15 +10,12 @@ require $base . '/lib/Testes/Autoloader.php';
 
 Autoloader::register();
 
-// so we can get some helpful data
 $analyzer = new Coverage;
 $analyzer->start();
 
-// re-run the test b/c two xdebug functions can't be run at the same time
 $suite = new Finder($base, $test);
 $suite = $suite->run();
 
-// gather useful data
 $analyzer = $analyzer->stop();
 $analyzer->addDirectory($base . '/lib');
 $analyzer->is('\.php$');
