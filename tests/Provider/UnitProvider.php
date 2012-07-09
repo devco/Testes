@@ -1,7 +1,7 @@
 <?php
 
 namespace Provider;
-use Testes\Test\Type\UnitAbstract;
+use Testes\Test\UnitAbstract;
 
 class UnitProvider extends UnitAbstract
 {

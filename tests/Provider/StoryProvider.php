@@ -1,7 +1,7 @@
 <?php
 
 namespace Provider;
-use Testes\Test\Type\StoryAbstract;
+use Testes\Test\StoryAbstract;
 
 class StoryProvider extends StoryAbstract
 {

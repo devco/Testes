@@ -2,7 +2,7 @@
 
 namespace Test;
 use Provider\StoryProvider;
-use Testes\Test\Type\StoryAbstract;
+use Testes\Test\StoryAbstract;
 
 require_once __DIR__ . '/../Provider/StoryProvider.php';
 
@@ -18,10 +18,10 @@ class StoryTest extends StoryAbstract
     
     public function assertions()
     {
-        $ass = $this->story->getAssertions();
-        $this->assert($ass[0]->passed());
-        $this->assert($ass[0]->getMessage() === 'good');
-        $this->assert($ass[1]->failed());
-        $this->assert($ass[1]->getMessage() === 'bad');
+        $passed = $this->story->getAssertions()->getPassed();
+        $failed = $this->story->getAssertions()->getFailed();
+        
+        $this->assert(isset($passed[0]) && $passed[0]->getMessage() === 'good');
+        $this->assert(isset($failed[0]) && $failed[0]->getMessage() === 'bad');
     }
 }

@@ -1,6 +1,7 @@
 <?php
 
 namespace Testes;
+use InvalidArgumentException;
 
 /**
  * The autoloader.
@@ -13,12 +14,12 @@ namespace Testes;
 class Autoloader
 {
     /**
-     * The namespace of the autoloader.
+     * List of paths.
      * 
-     * @var string
+     * @var array
      */
-    const NS = 'Testes';
-
+    private static $paths = [];
+    
     /**
      * Registers autoloading.
      * 
@@ -26,7 +27,23 @@ class Autoloader
      */
     public static function register()
     {
-        spl_autoload_register(array('\\' . self::NS . '\Autoloader', 'autoload'));
+        self::addPath(__DIR__ . '/..');
+        spl_autoload_register(array(get_class(), 'autoload'));
+    }
+    
+    /**
+     * Adds an autoload path.
+     * 
+     * @return void
+     */
+    public static function addPath($path)
+    {
+        if ($real = realpath($path)) {
+            self::$paths[] = $real;
+            return;
+        }
+        
+        throw new InvalidArgumentException(sprintf('The autoload path "%s" does not exist.', $path));
     }
 
     /**
@@ -38,10 +55,13 @@ class Autoloader
      */
     public static function autoload($class)
     {
-        if (strpos($class, self::NS) === 0) {
-            include dirname(__FILE__) 
-                  . '/../' 
-                  . str_replace(array('_', '\\'), DIRECTORY_SEPARATOR, $class) . '.php';
+        $name = str_replace(array('_', '\\'), DIRECTORY_SEPARATOR, $class) . '.php';
+        foreach (self::$paths as $path) {
+            $pathname = $path . DIRECTORY_SEPARATOR . $name;
+            if (is_readable($pathname)) {
+                include $pathname;
+                return;
+            }
         }
     }
 }

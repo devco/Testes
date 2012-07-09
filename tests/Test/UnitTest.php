@@ -2,7 +2,7 @@
 
 namespace Test;
 use Provider\UnitProvider;
-use Testes\Test\Type\UnitAbstract;
+use Testes\Test\UnitAbstract;
 
 require_once __DIR__ . '/../Provider/UnitProvider.php';
 
@@ -18,8 +18,10 @@ class UnitTest extends UnitAbstract
     
     public function assertions()
     {
-        $ass = $this->unit->getAssertions();
-        $this->assert($ass[0]->passed());
-        $this->assert($ass[1]->failed());
+        $passed = $this->unit->getAssertions()->getPassed();
+        $failed = $this->unit->getAssertions()->getFailed();
+        
+        $this->assert(count($passed) === 1);
+        $this->assert(count($failed) === 1);
     }
 }

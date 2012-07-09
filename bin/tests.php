@@ -9,6 +9,7 @@ $base = __DIR__ . '/..';
 require $base . '/lib/Testes/Autoloader.php';
 
 Autoloader::register();
+Autoloader::addPath($base . '/tests');
 
 $coverage = (new Coverage)->start();
 $suite    = (new Finder($base . '/tests', 'Test'))->run();
