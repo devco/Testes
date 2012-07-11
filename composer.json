@@ -1,0 +1,6 @@
+{
+	"name": "Testes/Testes"
+	"require": {
+		"php": ">=5.4.0"
+	}
+}
