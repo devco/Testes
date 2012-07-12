@@ -1,6 +1,24 @@
 {
-	"name": "treshugart/testes"
+	"authors": [
+		{
+			"name": "Trey Shugart",
+			"email": "treshugart@gmail.com",
+			"homepage": "http://iamtres.com",
+			"role": "Lead Developer"
+		}
+	],
+	"autoload": {
+		"psr-0": {
+			"Testes": "src"
+		}
+	},
+	"description": "Dead simple unit and story test framework.",
+	"homepage": "http://github.com/treshugart/Testes",
+	"keywords": ["test", "testing", "story", "unit", "bdd", "behavior", "driven", "development"],
+	"license": "MIT",
+	"name": "treshugart/testes",
 	"require": {
-		"php": ">=5.4.0"
+		"php": ">=5.4.0",
+		"ext-xdebug": "*"
 	}
 }

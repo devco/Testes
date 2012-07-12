@@ -6,14 +6,14 @@ use Testes\Autoloader;
 
 $base = __DIR__ . '/..';
 
-require $base . '/lib/Testes/Autoloader.php';
+require $base . '/src/Testes/Autoloader.php';
 
 Autoloader::register();
 Autoloader::addPath($base . '/tests');
 
 $coverage = (new Coverage)->start();
 $suite    = (new Finder($base . '/tests', 'Test'))->run();
-$analyzer = $coverage->stop()->addDirectory($base . '/lib')->is('\.php$');
+$analyzer = $coverage->stop()->addDirectory($base . '/src')->is('\.php$');
 
 ?>
 
