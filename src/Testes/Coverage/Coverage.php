@@ -3,8 +3,21 @@
 namespace Testes\Coverage;
 use RuntimeException;
 
+/**
+ * Handles code coverage.
+ * 
+ * @category UnitTesting
+ * @package  Testes
+ * @author   Trey Shugart <treshugart@gmail.com>
+ * @license  Copyright (c) 2010 Trey Shugart http://europaphp.org/license
+ */
 class Coverage
 {
+	/**
+	 * Sets up a new coverage manager.
+	 * 
+	 * @return Coverage
+	 */
 	public function __construct()
 	{
 		// ensure that XDEBUG is enabled
@@ -16,6 +29,11 @@ class Coverage
 		ini_set('xdebug.coverage_enable', 1);
 	}
 
+	/**
+	 * Starts covering code.
+	 * 
+	 * @return Coverage
+	 */
 	public function start()
 	{
 		$this->stop();
@@ -23,12 +41,22 @@ class Coverage
 		return $this;
 	}
 	
+	/**
+	 * Pauses code coverage.
+	 * 
+	 * @return Coverage
+	 */
 	public function pause()
 	{
 		xdebug_stop_code_coverage(false);
 		return $this;
 	}
 	
+	/**
+	 * Stops covering code and returns the analyzer with the result.
+	 * 
+	 * @return Analyzer
+	 */
 	public function stop()
 	{
 		$analyzer = $this->analyze();
@@ -36,6 +64,11 @@ class Coverage
 		return $analyzer;
 	}
 
+	/**
+	 * Returns the analyzer but does not stop code coverage.
+	 * 
+	 * @return Analyzer
+	 */
 	public function analyze()
 	{
 		return new Analyzer(new CoverageResult(xdebug_get_code_coverage()));

@@ -8,6 +8,14 @@ use Testes\RunableAbstract;
 use Testes\RunableInterface;
 use Traversable;
 
+/**
+ * Default suite implementation. Can be extended to provide setup for a particular set of tests in a matching directory.
+ * 
+ * @category UnitTesting
+ * @package  Testes
+ * @author   Trey Shugart <treshugart@gmail.com>
+ * @license  Copyright (c) 2010 Trey Shugart http://europaphp.org/license
+ */
 class Suite extends RunableAbstract implements IteratorAggregate, SuiteInterface
 {
     /**

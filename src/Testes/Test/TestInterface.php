@@ -3,6 +3,14 @@
 namespace Testes\Test;
 use Testes\RunableInterface;
 
+/**
+ * Base test interface.
+ * 
+ * @category UnitTesting
+ * @package  Testes
+ * @author   Trey Shugart <treshugart@gmail.com>
+ * @license  Copyright (c) 2010 Trey Shugart http://europaphp.org/license
+ */
 interface TestInterface extends RunableInterface
 {
     /**
@@ -12,7 +20,7 @@ interface TestInterface extends RunableInterface
 	 * @param string $description The description of the assertion.
 	 * @param int    $code        A code if necessary.
 	 * 
-	 * @return TypeInterface
+	 * @return TestInterface
 	 */
 	public function assert($expression, $description = null, $code = Assertion::DEFAULT_CODE);
 }

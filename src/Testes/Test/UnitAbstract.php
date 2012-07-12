@@ -52,7 +52,7 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
     /**
      * Runs all test methods.
      * 
-     * @return Test
+     * @return UnitAbstract
      */
     public function run()
     {
@@ -75,7 +75,7 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
      * @param string $description The description of the assertion.
      * @param int    $code        A code if necessary.
      * 
-     * @return \Testes\UnitTest\Test
+     * @return UnitAbstract
      */
     public function assert($expression, $description = null, $code = Assertion::DEFAULT_CODE)
     {

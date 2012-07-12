@@ -11,6 +11,14 @@ use Testes\RunableInterface;
 use Testes\Suite\Suite;
 use UnexpectedValueException;
 
+/**
+ * Default finder implementation.
+ * 
+ * @category UnitTesting
+ * @package  Testes
+ * @author   Trey Shugart <treshugart@gmail.com>
+ * @license  Copyright (c) 2010 Trey Shugart http://europaphp.org/license
+ */
 class Finder implements FinderInterface
 {
     /**

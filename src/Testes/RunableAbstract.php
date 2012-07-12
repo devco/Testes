@@ -2,9 +2,16 @@
 
 namespace Testes;
 use ArrayIterator;
-use Testes\Assertion\AssertionInterface;
 use Traversable;
 
+/**
+ * Base class for anything that is runable. Allows for manipulation of general metadata and benchmarking.
+ * 
+ * @category UnitTesting
+ * @package  Testes
+ * @author   Trey Shugart <treshugart@gmail.com>
+ * @license  Copyright (c) 2010 Trey Shugart http://europaphp.org/license
+ */
 abstract class RunableAbstract implements RunableInterface
 {
     /**

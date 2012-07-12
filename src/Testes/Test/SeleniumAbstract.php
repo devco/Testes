@@ -2,8 +2,21 @@
 
 namespace Testes\Test;
 
+/**
+ * Allows the use of tests to invoke tests using the Selenium Server.
+ * 
+ * @category UnitTesting
+ * @package  Testes
+ * @author   Trey Shugart <treshugart@gmail.com>
+ * @license  Copyright (c) 2010 Trey Shugart http://europaphp.org/license
+ */
 abstract class SeleniumAbstract extends UnitAbstract
 {
+    /**
+     * The selenium test configuration.
+     * 
+     * @var array
+     */
     private $config = array(
         'browser' => '*firefox',
         'host'    => 'localhost',
@@ -12,6 +25,11 @@ abstract class SeleniumAbstract extends UnitAbstract
         'url'     => null
     );
     
+    /**
+     * The current session id.
+     * 
+     * @var string
+     */
     private $sessionId;
     
     /**
