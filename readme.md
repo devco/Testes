@@ -219,3 +219,14 @@ The analyzer gives us quite a bit of information such as which lines were not te
             echo $line . PHP_EOL;
         }
     }
+
+Rendering Output
+----------------
+
+A lot of times you will need a the results in a format that something like a build server can consume. For this, we provide the JUnit format.
+
+    <?php
+    
+    use Testes\Renderer\Junit;
+
+    file_put_contents('junit.xml', (new Junit)->render($suite));

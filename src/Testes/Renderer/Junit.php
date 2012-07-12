@@ -1,6 +1,7 @@
 <?php
 
 namespace Testes\Renderer;
+use DOMDocument;
 use Testes\RunableInterface;
 use Testes\Suite\Suite;
 use Testes\Test\TestInterface;
@@ -24,7 +25,7 @@ class Junit implements RendererInterface
      */
     public function render(RunableInterface $test)
     {
-        $dom = new \DOMDocument;
+        $dom = new DOMDocument;
         $dom->formatOutput = true;
         
         $suitesElement = $dom->createElement('testsuites');
@@ -94,6 +95,13 @@ class Junit implements RendererInterface
         return $dom->saveXML();
     }
     
+    /**
+     * Ensures that a suite is passed in.
+     * 
+     * @param RunableInterface $test The test to ensure.
+     * 
+     * @return RunableInterface
+     */
     private function ensureSuite(RunableInterface $test)
     {
         if ($test instanceof TestInterface) {
