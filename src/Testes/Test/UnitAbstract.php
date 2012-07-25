@@ -2,6 +2,7 @@
 
 namespace Testes\Test;
 use ArrayIterator;
+use Exception;
 use Testes\Assertion\Assertion;
 use Testes\Assertion\Set;
 use Testes\RunableAbstract;
