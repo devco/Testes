@@ -26,7 +26,7 @@ class Finder implements FinderInterface
      * 
      * @var string
      */
-    const DEFAULT_SUITE_CLASS = '\Testes\Suite\Suite';
+    const DEFAULT_SUITE_CLASS = 'Testes\Suite\Suite';
 
     /**
      * The base directory.
@@ -93,18 +93,6 @@ class Finder implements FinderInterface
         if ($ns) {
              $this->dir .= DIRECTORY_SEPARATOR;
              $this->dir .= str_replace('\\', DIRECTORY_SEPARATOR, $this->ns);
-             $this->dir  = realpath($this->dir);
-        }
-
-        // recheck the dir to make sure it exists
-        if ($this->dir === false) {
-            throw new UnexpectedValueException(
-                'The test namespace "'
-                . $this->ns
-                . '" does not exist in "'
-                . $this->base
-                . '".'
-            );
         }
 
         // build the suite list
@@ -159,26 +147,27 @@ class Finder implements FinderInterface
     }
 
     /**
-     * Builds a suite for the specified directory. This method is recursive so it
-     * will build the list recusively.
+     * Builds a suite for the specified filesystem directory or file.
      * 
-     * @param SplFileInfo $dir The root directory to build the suite for.
+     * @param SplFileInfo $item The item to build the suite for.
      * 
      * @return void
      */
-    private function buildSuite(SplFileInfo $dir)
+    private function buildSuite(SplFileInfo $item)
     {
-        $suite = $this->detectSuite($dir);
+        $suite = $this->detectSuite($item);
 
-        foreach ($this->getDirectoryIterator($dir) as $item) {
-            if ($item->isDot()) {
-                continue;
-            }
-
-            if ($item->isDir()) {
-                $this->buildSuite($item);
-            } elseif ($this->isValid($item)) {
-                $suite->addTest($this->instantiate($item));
+        if ($item->isDir()) {
+            foreach ($this->getDirectoryIterator($item) as $subitem) {
+                if ($subitem->isDot()) {
+                    continue;
+                }
+    
+                if ($subitem->isDir()) {
+                    $this->buildSuite($subitem);
+                } elseif ($this->isValid($subitem)) {
+                    $suite->addTest($this->instantiate($subitem));
+                }
             }
         }
 
