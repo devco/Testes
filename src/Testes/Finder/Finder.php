@@ -45,6 +45,13 @@ class Finder implements FinderInterface
     private $suite;
     
     /**
+     * The original path.
+     * 
+     * @var string
+     */
+    private $path;
+    
+    /**
      * The namespace to use.
      * 
      * @var string
@@ -56,14 +63,14 @@ class Finder implements FinderInterface
      * 
      * @var string
      */
-    private $fullpath;
+    private $pathWithNamespace;
     
     /**
      * The full path to the tests.
      * 
      * @var string
      */
-    private $realpath;
+    private $realpathWithNamespace;
 
     /**
      * Constructs a new finder instance and sets up the test suites.
@@ -75,21 +82,26 @@ class Finder implements FinderInterface
     public function __construct($path, $namespace = null)
     {
         $this->suite     = new Suite;
+        $this->path      = $path;
         $this->namespace = trim($namespace, '\\');
-        $this->fullpath  = $path . DIRECTORY_SEPARATOR . str_replace('\\', DIRECTORY_SEPARATOR, $this->namespace);
-        $this->realpath  = realpath($this->fullpath);
         
-        if (!$this->realpath) {
-            if ($this->isTestFile($this->fullpath)) {
-                $this->addFile($this->fullpath);
+        $this->pathWithNamespace = rtrim($path, DIRECTORY_SEPARATOR)
+            . DIRECTORY_SEPARATOR 
+            . str_replace('\\', DIRECTORY_SEPARATOR, $this->namespace);
+        
+        $this->realpathWithNamespace = realpath($this->pathWithNamespace);
+        
+        if (!$this->realpathWithNamespace) {
+            if ($this->isTestFile($this->pathWithNamespace)) {
+                $this->addFile($this->pathWithNamespace);
             } else {
                 throw new UnexpectedValueException(sprintf(
                     'The path "%s" is not a valid test.',
-                    $this->fullpath
+                    $this->pathWithNamespace
                 ));
             }
         } else {
-            $this->addDirectory($this->fullpath);
+            $this->addDirectory($this->pathWithNamespace);
         }
     }
 
@@ -149,8 +161,7 @@ class Finder implements FinderInterface
                 if ($this->isTestFile($item->getRealpath()) && $this->isSuite($class)) {
                     $this->suite = new $class;
                 }
-                
-                $this->suite->addTests(new static($path, $class));
+                $this->suite->addTests(new static($this->path, $class));
             } elseif ($this->isTest($class)) {
                 $this->suite->addTest(new $class);
             }
@@ -168,7 +179,7 @@ class Finder implements FinderInterface
     {
         $class = realpath($path);
         $class = preg_replace('/\.php$/', '', $class);
-        $class = substr($class, strlen($this->realpath));
+        $class = substr($class, strlen($this->realpathWithNamespace));
         $class = str_replace(DIRECTORY_SEPARATOR, '\\', $class);
         $class = trim($class, '\\');
         $class = $this->namespace . '\\' . $class;
