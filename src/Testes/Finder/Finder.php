@@ -1,13 +1,8 @@
 <?php
 
 namespace Testes\Finder;
-use ArrayIterator;
 use DirectoryIterator;
-use Exception;
 use ReflectionClass;
-use RuntimeException;
-use SplFileInfo;
-use Testes\RunableInterface;
 use Testes\Suite\Suite;
 use UnexpectedValueException;
 
@@ -22,104 +17,80 @@ use UnexpectedValueException;
 class Finder implements FinderInterface
 {
     /**
-     * The default suite class to use.
+     * The test file suffix.
      * 
      * @var string
      */
-    const DEFAULT_SUITE_CLASS = 'Testes\Suite\Suite';
-
+    const SUFFIX = '.php';
+    
     /**
-     * The base directory.
+     * The runable interface.
      * 
      * @var string
      */
-    private $base;
-
+    const SUITE = 'Testes\Suite\SuiteInterface';
+    
     /**
-     * The directory including the namespace.
+     * The runable interface.
      * 
      * @var string
      */
-    private $dir;
-
-    /**
-     * The namespace to use for classes.
-     * 
-     * @var string
-     */
-    private $ns;
-
+    const TEST = 'Testes\Test\TestInterface';
+    
     /**
      * The array of suites that were found.
      * 
      * @var string
      */
-    private $suites = array();
-
+    private $suite;
+    
     /**
-     * The suite class to use.
+     * The namespace to use.
      * 
      * @var string
      */
-    private $suiteClass = self::DEFAULT_SUITE_CLASS;
+    private $namespace;
+    
+    /**
+     * The fullpath to the finder dir.
+     * 
+     * @var string
+     */
+    private $fullpath;
+    
+    /**
+     * The full path to the tests.
+     * 
+     * @var string
+     */
+    private $realpath;
 
     /**
-     * Constructs a new finder instance.
+     * Constructs a new finder instance and sets up the test suites.
      * 
      * @param string $dir The base directory to look in.
-     * @param string $ns  The namespace to use for class resolution.
      * 
      * @return Finder
      */
-    public function __construct($dir, $ns = null)
+    public function __construct($path, $namespace = null)
     {
-        // resolve path
-        $this->base = realpath($dir);
-
-        // ensure the path is correct
-        if ($this->base === false) {
-            throw new UnexpectedValueException(
-                'The directory "' . $dir . '" does not exist.'
-            );
+        $this->suite     = new Suite;
+        $this->namespace = trim($namespace, '\\');
+        $this->fullpath  = $path . DIRECTORY_SEPARATOR . str_replace('\\', DIRECTORY_SEPARATOR, $this->namespace);
+        $this->realpath  = realpath($this->fullpath);
+        
+        if (!$this->realpath) {
+            if ($this->isTestFile($this->fullpath)) {
+                $this->addFile($this->fullpath);
+            } else {
+                throw new UnexpectedValueException(sprintf(
+                    'The path "%s" is not a valid test.',
+                    $this->fullpath
+                ));
+            }
+        } else {
+            $this->addDirectory($this->fullpath);
         }
-
-        // resolve namespace
-        $this->ns = trim($ns, '\\');
-
-        // set the directory to use
-        $this->dir = $this->base;
-
-        // append the namespace to the dir
-        if ($ns) {
-             $this->dir .= DIRECTORY_SEPARATOR;
-             $this->dir .= str_replace('\\', DIRECTORY_SEPARATOR, $this->ns);
-        }
-
-        // build the suite list
-        $this->buildSuite(new SplFileInfo($this->dir));
-    }
-
-    /**
-     * Sets the suite class to use.
-     * 
-     * @param string $class The class to use.
-     * 
-     * @return Finder
-     */
-    public function setSuiteClass($class)
-    {
-        $this->suiteClass = $class;
-        return $this;
-    }
-
-    /**
-     * Returns the suite class being used.
-     * 
-     * @return string
-     */
-    public function getSuiteClass()
-    {
-        return $this->suiteClass;
     }
 
     /**
@@ -127,169 +98,129 @@ class Finder implements FinderInterface
      * 
      * @return Suite
      */
-    public function run()
-    {
-        $suite = $this->suiteClass;
-        $suite = new $suite;
-        $suite->addTests($this);
-        $suite->run();
-        return $suite;
-    }
-
-    /**
-     * Returns the iterator for the suites.
-     * 
-     * @return ArrayIterator
-     */
     public function getIterator()
     {
-        return new ArrayIterator($this->suites);
+        return $this->suite;
     }
-
+    
     /**
-     * Builds a suite for the specified filesystem directory or file.
+     * Runs the suite and returns it.
      * 
-     * @param SplFileInfo $item The item to build the suite for.
+     * @return Suite
+     */
+    public function run()
+    {
+        $this->suite->run();
+        return $this->suite;
+    }
+    
+    /**
+     * Adds a file to the suite.
+     * 
+     * @param string $path The test path.
      * 
      * @return void
      */
-    private function buildSuite(SplFileInfo $item)
+    private function addFile($path)
     {
-        $suite = $this->detectSuite($item);
-
-        if ($item->isDir()) {
-            foreach ($this->getDirectoryIterator($item) as $subitem) {
-                if ($subitem->isDot()) {
-                    continue;
-                }
+        if ($this->isTestFile($path)) {
+            $class = $this->resolveClassNameFromPath($path);
+            $this->suite->addTest(new $class);
+        }
+    }
     
-                if ($subitem->isDir()) {
-                    $this->buildSuite($subitem);
-                } elseif ($this->isValid($subitem)) {
-                    $suite->addTest($this->instantiate($subitem));
+    /**
+     * Adds a directory to the suite.
+     * 
+     * @param string $path The test path.
+     * 
+     * @return void
+     */
+    private function addDirectory($path)
+    {
+        foreach (new DirectoryIterator($path) as $item) {
+            if ($item->isDot()) {
+                continue;
+            }
+            
+            $class = $this->resolveClassNameFromPath($item->getRealpath());
+            
+            if ($item->isDir()) {
+                if ($this->isTestFile($item->getRealpath()) && $this->isSuite($class)) {
+                    $this->suite = new $class;
                 }
+                
+                $this->suite->addTests(new static($path, $class));
+            } elseif ($this->isTest($class)) {
+                $this->suite->addTest(new $class);
             }
         }
-
-        $this->suites[] = $suite;
     }
-
+    
     /**
-     * Detects and returns a suite instance for the specified directory.
+     * Formats a class name from the path and returns it.
      * 
-     * @param SplFileInfo $dir The directory to get the suite for.
-     * 
-     * @return SuiteInterface
-     */
-    private function detectSuite(SplFileInfo $dir)
-    {
-        if ($file = $this->getPhpFileForDirectory($dir)) {
-            $suite = $this->instantiate($file);
-        } else {
-            $suite = $this->suiteClass;
-            $suite = new $suite;
-        }
-
-        return $suite;
-    }
-
-    /**
-     * Returns the corresponding PHP file for a directory if one exists. If one
-     * does not exist, it returns false.
-     * 
-     * @param SplFileInfo $dir The directory to get the PHP file for.
-     * 
-     * @return SplFileInfo | false
-     */
-    private function getPhpFileForDirectory(SplFileInfo $dir)
-    {
-        $file = $dir->getRealpath() . '.php';
-        return is_file($file) ? new SplFileInfo($file) : false;
-    }
-
-    /**
-     * Returns a directory iterator for the specified item.
-     * 
-     * @param SplFileInfo $item The item to check.
-     * 
-     * @return DirectoryIterator
-     */
-    private function getDirectoryIterator(SplFileInfo $item)
-    {
-        return new DirectoryIterator($item->getRealpath());
-    }
-
-    /**
-     * Checks to make sure the specified file is a valid test file.
-     * 
-     * @param SplFileInfo $file The file to check.
-     * 
-     * @return bool
-     */
-    private function isValid(SplFileInfo $item)
-    {
-        // format the class name
-        $class = $this->formatFileToClass($item);
-
-        // we need the reflection class to make sure it's a valid test
-        try {
-            $class = new ReflectionClass($class);
-        } catch (Exception $e) {
-            return false;
-        }
-
-        // if we got here, all we need to do is make sure that it's runable
-        return $class->implementsInterface('Testes\RunableInterface');
-    }
-
-    /**
-     * Formats the specified file into a valid class name.
-     * 
-     * @param SplFileInfo $file The file to format.
+     * @param string $path The test path.
      * 
      * @return string
      */
-    private function formatFileToClass(SplFileInfo $file)
+    private function resolveClassNameFromPath($path)
     {
-        $class = str_replace('.php', '', $file->getRealpath());
-        $class = substr($class, strlen($this->dir) + 1);
+        $class = realpath($path);
+        $class = preg_replace('/\.php$/', '', $class);
+        $class = substr($class, strlen($this->realpath));
         $class = str_replace(DIRECTORY_SEPARATOR, '\\', $class);
-        $class = $this->ns . '\\' . $class;
+        $class = trim($class, '\\');
+        $class = $this->namespace . '\\' . $class;
         $class = trim($class, '\\');
         return $class;
     }
-
+    
     /**
-     * Instantiates the class inside the given file.
+     * Returns whether or not the class is a test suite.
      * 
-     * @param SplFileInfo $file The file to instantiate the class for.
-     * 
-     * @return RunableInterface
-     */
-    private function instantiate(SplFileInfo $file)
-    {
-        require_once $file->getRealpath();
-        $class = $this->formatFileToClass($file);
-        $class = new $class;
-        $this->checkInstance($class);
-        return $class;
-    }
-
-    /**
-     * Ensures that the given class instance is a valid runable suite or test.
-     * 
-     * @param mixed $class The class to check.
+     * @param string $class The test class.
      * 
      * @return bool
      */
-    private function checkInstance($class)
+    private function isSuite($class)
     {
-        if (!$class instanceof RunableInterface) {
-            throw new RuntimeException(
-                'The class "'
-                . get_class($class)
-                . '" must implement \Testes\Test\RunableInterface.'
-            );
-        }
+        return $this->isClass($class) && (new ReflectionClass($class))->implementsInterface(self::SUITE);
+    }
+    
+    /**
+     * Returns whether or not the class is a test.
+     * 
+     * @param string $class The test class.
+     * 
+     * @return bool
+     */
+    private function isTest($class)
+    {
+        return $this->isClass($class) && (new ReflectionClass($class))->implementsInterface(self::TEST);
+    }
+    
+    /**
+     * Returns whether or not the class exists.
+     * 
+     * @param string $class The test class.
+     * 
+     * @return bool
+     */
+    private function isClass($class)
+    {
+        return class_exists($class, true);
+    }
+    
+    /**
+     * Returns whether or not the path has a corresponding file.
+     * 
+     * @param string $class The test path.
+     * 
+     * @return bool
+     */
+    private function isTestFile($path)
+    {
+        return is_file($path . self::SUFFIX);
     }
 }
