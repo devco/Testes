@@ -91,17 +91,10 @@ class Finder implements FinderInterface
         
         $this->realpathWithNamespace = realpath($this->pathWithNamespace);
         
-        if (!$this->realpathWithNamespace) {
-            if ($this->isTestFile($this->pathWithNamespace)) {
-                $this->addFile($this->pathWithNamespace);
-            } else {
-                throw new UnexpectedValueException(sprintf(
-                    'The path "%s" is not a valid test.',
-                    $this->pathWithNamespace
-                ));
-            }
-        } else {
+        if ($this->realpathWithNamespace) {
             $this->addDirectory($this->pathWithNamespace);
+        } else {
+            $this->addFile($this->pathWithNamespace);
         }
     }
 
@@ -135,9 +128,15 @@ class Finder implements FinderInterface
      */
     private function addFile($path)
     {
-        if ($this->isTestFile($path)) {
-            $class = $this->resolveClassNameFromPath($path);
+        $class = $this->resolveClassNameFromPath($path);
+        
+        if (is_file($path) && $this->isTest($class)) {
             $this->suite->addTest(new $class);
+        } else {
+            throw new UnexpectedValueException(sprintf(
+                'The path "%s" is not a valid test.',
+                $path
+            ));
         }
     }
     
@@ -150,6 +149,14 @@ class Finder implements FinderInterface
      */
     private function addDirectory($path)
     {
+        $suite = $this->resolveClassNameFromPath($path);
+
+        if (is_file($path . self::SUFFIX) && $this->isSuite($suite)) {
+            $suite = new $suite;
+        } else {
+            $suite = new Suite;
+        }
+
         foreach (new DirectoryIterator($path) as $item) {
             if ($item->isDot()) {
                 continue;
@@ -158,14 +165,13 @@ class Finder implements FinderInterface
             $class = $this->resolveClassNameFromPath($item->getRealpath());
             
             if ($item->isDir()) {
-                if ($this->isTestFile($item->getRealpath()) && $this->isSuite($class)) {
-                    $this->suite = new $class;
-                }
-                $this->suite->addTests(new static($this->path, $class));
-            } elseif ($this->isTest($class)) {
-                $this->suite->addTest(new $class);
+                $suite->addTests(new static($this->path, $class));
+            } else {
+                $suite->addTest(new $class);
             }
         }
+
+        return $this->suite->addTest($suite);
     }
     
     /**
@@ -221,17 +227,5 @@ class Finder implements FinderInterface
     private function isClass($class)
     {
         return class_exists($class, true);
-    }
-    
-    /**
-     * Returns whether or not the path has a corresponding file.
-     * 
-     * @param string $class The test path.
-     * 
-     * @return bool
-     */
-    private function isTestFile($path)
-    {
-        return is_file($path . self::SUFFIX);
     }
 }

@@ -38,17 +38,22 @@ class Suite extends RunableAbstract implements IteratorAggregate, SuiteInterface
     /**
      * Runs all tests.
      * 
+     * @param RunableInterface $suite The test suite that ran the current test if any.
+     * 
      * @return RunableAbstract
      */
-    public function run()
+    public function run(RunableInterface $suite = null)
     {
         $this->setUp();
         $this->startBenchmark();
+
         foreach ($this->tests as $test) {
-            $test->run();
+            $test->run($this);
         }
+
         $this->stopBenchmark();
         $this->tearDown();
+
         return $this;
     }
     
@@ -88,6 +93,7 @@ class Suite extends RunableAbstract implements IteratorAggregate, SuiteInterface
     public function getSuites()
     {
         $suites = new ArrayIterator;
+
         foreach ($this->tests as $test) {
             if ($test instanceof SuiteInterface) {
                 foreach ($test->getSuites() as $suite) {
@@ -95,6 +101,7 @@ class Suite extends RunableAbstract implements IteratorAggregate, SuiteInterface
                 }
             }
         }
+        
         return $suites;
     }
     

@@ -6,6 +6,7 @@ use Exception;
 use Testes\Assertion\Assertion;
 use Testes\Assertion\Set;
 use Testes\RunableAbstract;
+use Testes\RunableInterface;
 
 /**
  * Abstract test class that implements all methods for test suites and base class.
@@ -55,17 +56,20 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
      * 
      * @return UnitAbstract
      */
-    public function run()
+    public function run(RunableInterface $suite = null)
     {
-        $this->setUp();
+        $this->setUp($suite);
+
         foreach ($this->methods as $method) {
             try {
-                $this->$method();
+                $this->$method($suite);
             } catch (Exception $e) {
                 $this->exceptions[] = $e;
             }
         }
-        $this->tearDown();
+
+        $this->tearDown($suite);
+
         return $this;
     }
     
