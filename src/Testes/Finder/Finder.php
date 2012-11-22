@@ -166,7 +166,7 @@ class Finder implements FinderInterface
             
             if ($item->isDir()) {
                 $suite->addTests(new static($this->path, $class));
-            } else {
+            } elseif ($this->isSuite($class) || $this->isTest($class)) {
                 $suite->addTest(new $class);
             }
         }
@@ -226,6 +226,16 @@ class Finder implements FinderInterface
      */
     private function isClass($class)
     {
-        return class_exists($class, true);
+        if (!class_exists($class, true)) {
+            return false;
+        }
+
+        $class = new ReflectionClass($class);
+
+        if (!$class->isInstantiable()) {
+            return false;
+        }
+
+        return true;
     }
 }
