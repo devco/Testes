@@ -3,8 +3,11 @@
 namespace Testes\Test;
 use ArrayIterator;
 use Exception;
+use LogicException;
+use ReflectionClass;
 use Testes\Assertion\Assertion;
 use Testes\Assertion\Set;
+use Testes\Fixture\FixtureInterface;
 use Testes\RunableAbstract;
 use Testes\RunableInterface;
 
@@ -50,25 +53,65 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
         $this->assertions = new Set;
         $this->exceptions = new ArrayIterator;
     }
+
+    /**
+     * Adds a fixture to the unit test.
+     * 
+     * @param string           $name    The fixture name.
+     * @param FixtureInterface $fixture The fixture to add.
+     * 
+     * @return UnitAbstract
+     */
+    public function setFixture($name, FixtureInterface $fixture)
+    {
+        $this->fixtures[$name] = $fixture;
+        return $this;
+    }
+
+    /**
+     * Returns the specified fixture.
+     * 
+     * @param string $name The fixture name.
+     * 
+     * @throws LogicException If the fixture does not exist.
+     * 
+     * @return FixtureInterface
+     */
+    public function getFixture($name)
+    {
+        if (isset($this->fixtures[$name])) {
+            return $this->fixtures[$name];
+        }
+
+        throw new LogicException(sprintf('The fixture "%s" does not exist.', $name));
+    }
     
     /**
      * Runs all test methods.
      * 
      * @return UnitAbstract
      */
-    public function run(RunableInterface $suite = null)
+    public function run()
     {
-        $this->setUp($suite);
+        $this->setUp();
+
+        foreach ($this->fixtures as $fixture) {
+            $fixture->setUp();
+        }
 
         foreach ($this->methods as $method) {
             try {
-                $this->$method($suite);
+                $this->$method();
             } catch (Exception $e) {
                 $this->exceptions[] = $e;
             }
         }
 
-        $this->tearDown($suite);
+        foreach ($this->fixtures as $fixture) {
+            $fixture->tearDown();
+        }
+
+        $this->tearDown();
 
         return $this;
     }
@@ -127,7 +170,7 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
     {
         $exclude = array();
         $include = array();
-        $self    = new \ReflectionClass($this);
+        $self    = new ReflectionClass($this);
         
         // exclude any methods from the interfaces
         foreach ($self->getInterfaces() as $interface) {

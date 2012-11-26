@@ -42,13 +42,13 @@ class Suite extends RunableAbstract implements IteratorAggregate, SuiteInterface
      * 
      * @return RunableAbstract
      */
-    public function run(RunableInterface $suite = null)
+    public function run()
     {
         $this->setUp();
         $this->startBenchmark();
 
         foreach ($this->tests as $test) {
-            $test->run($this);
+            $test->run();
         }
 
         $this->stopBenchmark();

@@ -149,14 +149,6 @@ class Finder implements FinderInterface
      */
     private function addDirectory($path)
     {
-        $suite = $this->resolveClassNameFromPath($path);
-
-        if (is_file($path . self::SUFFIX) && $this->isSuite($suite)) {
-            $suite = new $suite;
-        } else {
-            $suite = new Suite;
-        }
-
         foreach (new DirectoryIterator($path) as $item) {
             if ($item->isDot()) {
                 continue;
@@ -165,13 +157,11 @@ class Finder implements FinderInterface
             $class = $this->resolveClassNameFromPath($item->getRealpath());
             
             if ($item->isDir()) {
-                $suite->addTests(new static($this->path, $class));
-            } elseif ($this->isSuite($class) || $this->isTest($class)) {
-                $suite->addTest(new $class);
+                $this->suite->addTests(new static($this->path, $class));
+            } elseif ($this->isTest($class)) {
+                $this->suite->addTest(new $class);
             }
         }
-
-        return $this->suite->addTest($suite);
     }
     
     /**
@@ -194,18 +184,6 @@ class Finder implements FinderInterface
     }
     
     /**
-     * Returns whether or not the class is a test suite.
-     * 
-     * @param string $class The test class.
-     * 
-     * @return bool
-     */
-    private function isSuite($class)
-    {
-        return $this->isClass($class) && (new ReflectionClass($class))->implementsInterface(self::SUITE);
-    }
-    
-    /**
      * Returns whether or not the class is a test.
      * 
      * @param string $class The test class.
@@ -214,28 +192,12 @@ class Finder implements FinderInterface
      */
     private function isTest($class)
     {
-        return $this->isClass($class) && (new ReflectionClass($class))->implementsInterface(self::TEST);
-    }
-    
-    /**
-     * Returns whether or not the class exists.
-     * 
-     * @param string $class The test class.
-     * 
-     * @return bool
-     */
-    private function isClass($class)
-    {
         if (!class_exists($class, true)) {
             return false;
         }
 
         $class = new ReflectionClass($class);
 
-        if (!$class->isInstantiable()) {
-            return false;
-        }
-
-        return true;
+        return $class->isInstantiable() && $class->implementsInterface(self::TEST);
     }
 }
