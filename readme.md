@@ -94,7 +94,7 @@ In your test classes, you are allowed to define `setUp` and `tearDown` methods f
 
 ### Fixtures
 
-Generally, what you're going to use these methods for are preparing data to run your tests against. This test data is usually called a fixture, or fixtures. Fixtures exist as a way to model your test data and to automate the `setUp` and `tearDown` if it instead of making you define it in your test class.
+Generally, what you're going to use these methods for are preparing data to run your tests against. This test data is usually called a fixture, or fixtures. Fixtures exist as a way to model your test data and to automate the `setUp` and `tearDown` in it instead of making you define it in your test class.
 
 A fixture at a bare minimum, must define a method that generates its data:
 
@@ -147,7 +147,7 @@ You may ask why there aren't more asserton methods. Take the following example:
     assert($value === true, 'message');
     assertEquals($value, true, 'message');
 
-The former assertion is actuall more readable and even shorter than the latter.
+The former assertion is actually more readable and even shorter than the latter.
 
 Running Tests
 -------------
