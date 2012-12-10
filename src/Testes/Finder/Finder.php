@@ -91,10 +91,17 @@ class Finder implements FinderInterface
         
         $this->realpathWithNamespace = realpath($this->pathWithNamespace);
         
-        if ($this->realpathWithNamespace) {
-            $this->addDirectory($this->pathWithNamespace);
+        if (!$this->realpathWithNamespace) {
+            if ($this->isTestFile($this->pathWithNamespace)) {
+                $this->addFile($this->pathWithNamespace);
+            } else {
+                throw new UnexpectedValueException(sprintf(
+                    'The path "%s" is not a valid test.',
+                    $this->pathWithNamespace
+                ));
+            }
         } else {
-            $this->addFile($this->pathWithNamespace);
+            $this->addDirectory($this->pathWithNamespace);
         }
     }
 
@@ -113,10 +120,9 @@ class Finder implements FinderInterface
      * 
      * @return Suite
      */
-    public function run()
+    public function run(callable $after = null)
     {
-        $this->suite->run();
-        return $this->suite;
+        return $this->suite->run($after);
     }
     
     /**
@@ -128,15 +134,9 @@ class Finder implements FinderInterface
      */
     private function addFile($path)
     {
-        $class = $this->resolveClassNameFromPath($path);
-        
-        if (is_file($path) && $this->isTest($class)) {
+        if ($this->isTestFile($path)) {
+            $class = $this->resolveClassNameFromPath($path);
             $this->suite->addTest(new $class);
-        } else {
-            throw new UnexpectedValueException(sprintf(
-                'The path "%s" is not a valid test.',
-                $path
-            ));
         }
     }
     
@@ -157,6 +157,9 @@ class Finder implements FinderInterface
             $class = $this->resolveClassNameFromPath($item->getRealpath());
             
             if ($item->isDir()) {
+                if ($this->isTestFile($item->getRealpath()) && $this->isSuite($class)) {
+                    $this->suite = new $class;
+                }
                 $this->suite->addTests(new static($this->path, $class));
             } elseif ($this->isTest($class)) {
                 $this->suite->addTest(new $class);
@@ -184,6 +187,18 @@ class Finder implements FinderInterface
     }
     
     /**
+     * Returns whether or not the class is a test suite.
+     * 
+     * @param string $class The test class.
+     * 
+     * @return bool
+     */
+    private function isSuite($class)
+    {
+        return $this->isClass($class) && (new ReflectionClass($class))->implementsInterface(self::SUITE);
+    }
+    
+    /**
      * Returns whether or not the class is a test.
      * 
      * @param string $class The test class.
@@ -192,12 +207,30 @@ class Finder implements FinderInterface
      */
     private function isTest($class)
     {
-        if (!class_exists($class, true)) {
-            return false;
-        }
-
-        $class = new ReflectionClass($class);
-        
-        return $class->isInstantiable() && $class->implementsInterface(self::TEST);
+        return $this->isClass($class) && (new ReflectionClass($class))->implementsInterface(self::TEST);
+    }
+    
+    /**
+     * Returns whether or not the class exists.
+     * 
+     * @param string $class The test class.
+     * 
+     * @return bool
+     */
+    private function isClass($class)
+    {
+        return class_exists($class, true);
+    }
+    
+    /**
+     * Returns whether or not the path has a corresponding file.
+     * 
+     * @param string $class The test path.
+     * 
+     * @return bool
+     */
+    private function isTestFile($path)
+    {
+        return is_file($path . self::SUFFIX);
     }
 }

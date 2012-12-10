@@ -157,7 +157,7 @@ class Analyzer implements Countable, IteratorAggregate
 	public function is($pattern, $mods = null)
 	{
     	return $this->filter(function($file) use ($pattern, $mods) {
-    	    return preg_match('#' . $pattern . '#' . $mods, $file->__toString()) ? true : false;
+    	    return preg_match('#' . $pattern . '#' . $mods, $file->__toString());
     	});
 	}
 	
@@ -172,7 +172,7 @@ class Analyzer implements Countable, IteratorAggregate
 	public function not($pattern, $mods = null)
 	{
     	return $this->filter(function($file) use ($pattern, $mods) {
-            return !preg_match('#' . $pattern . '#' . $mods, $file->__toString()) ? true : false;
+            return !preg_match('#' . $pattern . '#' . $mods, $file->__toString());
     	});
 	}
 	

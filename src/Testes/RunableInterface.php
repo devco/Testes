@@ -12,7 +12,7 @@ interface RunableInterface extends Countable
      * 
      * @return void
      */
-    public function run();
+    public function run(callable $after = null);
     
     /**
      * Sets up the test.
