@@ -197,7 +197,7 @@ class Finder implements FinderInterface
         }
 
         $class = new ReflectionClass($class);
-
+        
         return $class->isInstantiable() && $class->implementsInterface(self::TEST);
     }
 }
