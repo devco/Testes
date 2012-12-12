@@ -195,7 +195,7 @@ class Finder implements FinderInterface
      */
     private function isSuite($class)
     {
-        return $this->isClass($class) && (new ReflectionClass($class))->implementsInterface(self::SUITE);
+        return $this->isRunable($class) && (new ReflectionClass($class))->implementsInterface(self::SUITE);
     }
     
     /**
@@ -207,7 +207,7 @@ class Finder implements FinderInterface
      */
     private function isTest($class)
     {
-        return $this->isClass($class) && (new ReflectionClass($class))->implementsInterface(self::TEST);
+        return $this->isRunable($class) && (new ReflectionClass($class))->implementsInterface(self::TEST);
     }
     
     /**
@@ -217,9 +217,9 @@ class Finder implements FinderInterface
      * 
      * @return bool
      */
-    private function isClass($class)
+    private function isRunable($class)
     {
-        return class_exists($class, true);
+        return class_exists($class, true) && (new ReflectionClass($class))->isInstantiable();
     }
     
     /**
