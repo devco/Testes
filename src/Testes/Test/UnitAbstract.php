@@ -5,6 +5,7 @@ use ArrayIterator;
 use Exception;
 use LogicException;
 use ReflectionClass;
+use RuntimeException;
 use Testes\Assertion\Assertion;
 use Testes\Assertion\AssertionArray;
 use Testes\Benchmark\Benchmark;
@@ -51,12 +52,11 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
     public function run(callable $after = null)
     {
         $this->setUp();
-
-        foreach ($this->fixtures as $fixture) {
-            $fixture->setUp();
-        }
+        $this->setUpFixtures();
 
         foreach ($this->methods as $method) {
+            set_error_handler($this->generateErrorHandler($method));
+
             if ($this->benchmarks->has($method)) {
                 $this->benchmarks->get($method)->start();
             }
@@ -70,12 +70,11 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
             if ($this->benchmarks->has($method)) {
                 $this->benchmarks->get($method)->stop();
             }
+
+            restore_error_handler();
         }
 
-        foreach (array_reverse($this->fixtures) as $fixture) {
-            $fixture->tearDown();
-        }
-
+        $this->tearDownFixtures();
         $this->tearDown();
 
         if ($after) {
@@ -110,6 +109,24 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
     public function getBenchmarks()
     {
         return $this->benchmarks;
+    }
+
+    public function setUpFixtures()
+    {
+        foreach ($this->fixtures as $fixture) {
+            $fixture->setUp();
+        }
+
+        return $this;
+    }
+
+    public function tearDownFixtures()
+    {
+        foreach (array_reverse($this->fixtures) as $fixture) {
+            $fixture->tearDown();
+        }
+
+        return $this;
     }
 
     public function count()
@@ -154,5 +171,14 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
         }
 
         return array_unique($include);
+    }
+
+    private function generateErrorHandler($method)
+    {
+        $msg = sprintf('Error running test "%s::%s()"', get_class($this), $method);
+
+        return function($errno, $errstr, $errfile, $errline) use ($msg) {
+            throw new RuntimeException("$msg: \"$errstr\" in $errfile on line $errline.", $errno);
+        };
     }
 }

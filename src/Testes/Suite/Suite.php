@@ -102,7 +102,7 @@ class Suite extends RunableAbstract implements IteratorAggregate, SuiteInterface
         
         foreach ($this->tests as $test) {
             foreach ($test->getExceptions() as $exception) {
-                $exceptions->add($exception);
+                $exceptions->append($exception);
             }
         }
 

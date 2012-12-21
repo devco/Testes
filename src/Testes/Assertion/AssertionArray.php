@@ -8,16 +8,7 @@ use Traversable;
 
 class AssertionArray implements Countable, IteratorAggregate
 {
-    private $assertions;
-    
-    public function __construct(Traversable $assertions = null)
-    {
-        $this->assertions = new ArrayIterator;
-
-        if ($assertions) {
-            $this->addTraversable($assertions);
-        }
-    }
+    private $assertions = [];
     
     public function add(AssertionInterface $assertion)
     {
@@ -63,11 +54,11 @@ class AssertionArray implements Countable, IteratorAggregate
     
     public function count()
     {
-        return $this->assertions->count();
+        return count($this->assertions);
     }
     
     public function getIterator()
     {
-        return $this->assertions;
+        return new ArrayIterator($this->assertions);
     }
 }
