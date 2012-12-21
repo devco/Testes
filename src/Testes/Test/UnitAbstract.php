@@ -6,7 +6,9 @@ use Exception;
 use LogicException;
 use ReflectionClass;
 use Testes\Assertion\Assertion;
-use Testes\Assertion\Set;
+use Testes\Assertion\AssertionArray;
+use Testes\Benchmark\Benchmark;
+use Testes\Benchmark\BenchmarkArray;
 use Testes\Fixture\FixtureInterface;
 use Testes\RunableAbstract;
 use Testes\RunableInterface;
@@ -15,17 +17,20 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
 {
     private $methods;
 
-    private $assertions = array();
+    private $assertions;
 
-    private $exceptions = array();
+    private $exceptions;
 
     private $fixtures = [];
+
+    private $benchmarks;
 
     public function __construct()
     {
         $this->methods    = $this->getMethods();
-        $this->assertions = new Set;
+        $this->assertions = new AssertionArray;
         $this->exceptions = new ArrayIterator;
+        $this->benchmarks = new BenchmarkArray;
     }
 
     public function setFixture($name, FixtureInterface $fixture)
@@ -52,10 +57,18 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
         }
 
         foreach ($this->methods as $method) {
+            if ($this->benchmarks->has($method)) {
+                $this->benchmarks->get($method)->start();
+            }
+
             try {
                 $this->$method();
             } catch (Exception $e) {
                 $this->exceptions[] = $e;
+            }
+
+            if ($this->benchmarks->has($method)) {
+                $this->benchmarks->get($method)->stop();
             }
         }
 
@@ -78,6 +91,12 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
         return $this;
     }
 
+    public function benchmark($method)
+    {
+        $this->benchmarks->add($method, new Benchmark);
+        return $this;
+    }
+
     public function getAssertions()
     {
         return $this->assertions;
@@ -86,6 +105,11 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
     public function getExceptions()
     {
         return $this->exceptions;
+    }
+
+    public function getBenchmarks()
+    {
+        return $this->benchmarks;
     }
 
     public function count()

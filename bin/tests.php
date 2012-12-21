@@ -1,50 +1,124 @@
 <?php
 
-use Testes\Coverage\Coverage;
-use Testes\Finder\Finder;
-use Testes\Autoloader;
+namespace Testes\Suite;
+use ArrayIterator;
+use IteratorAggregate;
+use Testes\Assertion\AssertionArray;
+use Testes\Benchmark\BenchmarkArray;
+use Testes\RunableAbstract;
+use Testes\RunableInterface;
+use Traversable;
 
-$base = __DIR__ . '/..';
+class Suite extends RunableAbstract implements IteratorAggregate, SuiteInterface
+{
+    private $tests = array();
 
-require $base . '/vendor/autoload.php';
-
-Autoloader::register();
-Autoloader::addPath($base . '/tests');
-Autoloader::addPath($base . '/src');
-
-$coverage = new Coverage;
-$finder   = new Finder($base . '/tests', 'Test');
-
-$coverage->start();
-
-echo PHP_EOL;
-
-$suite = $finder->run(function($test) {
-    echo $test->getAssertions()->isPassed() && !$test->getExceptions() ? '.' : 'F';
-});
-
-echo PHP_EOL . PHP_EOL . sprintf('Ran %d test%s.', count($suite), count($suite) === 1 ? '' : 's');
-
-$analyzer = $coverage->stop()->addDirectory($base . '/src')->is('\.php$');
-
-echo PHP_EOL . PHP_EOL . 'Coverage: ' . $analyzer->getPercentTested() . '%' . PHP_EOL . PHP_EOL;
-
-if (count($assertions = $suite->getAssertions()->getFailed())) {
-    echo 'Assertions:' . PHP_EOL;
-
-    foreach ($assertions as $ass) {
-        echo '  ' . $ass->getTestClass() . ':' . $ass->getTestLine() . ' ' . $ass->getMessage() . PHP_EOL;
+    public function getIterator()
+    {
+        return $this->getTests();
     }
 
-    echo PHP_EOL;
-}
+    public function run(callable $after = null)
+    {
+        $this->setUp();
 
-if (count($exceptions = $suite->getExceptions())) {
-    echo 'Exceptions:' . PHP_EOL;
+        foreach ($this->tests as $test) {
+            $test->run($after);
+        }
 
-    foreach ($exceptions as $exc) {
-        echo '  ' . $exc->getFile() . ':' . $exc->getLine() . ' ' . $exc->getMessage() . PHP_EOL;
+        $this->tearDown();
+
+        return $this;
     }
 
-    echo PHP_EOL;
+    public function count()
+    {
+        return $this->getTests()->count();
+    }
+
+    public function addTest(RunableInterface $test)
+    {
+        $this->tests[] = $test;
+        return $this;
+    }
+
+    public function addTests(Traversable $tests)
+    {
+        foreach ($tests as $test) {
+            $this->addTest($test);
+        }
+
+        return $this;
+    }
+
+    public function getSuites()
+    {
+        $suites = new ArrayIterator;
+        
+        foreach ($this->tests as $test) {
+            if ($test instanceof SuiteInterface) {
+                foreach ($test->getSuites() as $suite) {
+                    $suites[] = $suite;
+                }
+            }
+        }
+
+        return $suites;
+    }
+
+    public function getTests()
+    {
+        $tests = new ArrayIterator;
+
+        foreach ($this->tests as $test) {
+            if ($test instanceof SuiteInterface) {
+                foreach ($test->getTests() as $subtest) {
+                    $tests[] = $subtest;
+                }
+            } else {
+                $tests[] = $test;
+            }
+        }
+
+        return $tests;
+    }
+
+    public function getAssertions()
+    {
+        $assertions = new AssertionArray;
+        
+        foreach ($this->tests as $test) {
+            foreach ($test->getAssertions() as $assertion) {
+                $assertions->add($assertion);
+            }
+        }
+
+        return $assertions;
+    }
+
+    public function getExceptions()
+    {
+        $exceptions = new ArrayIterator;
+        
+        foreach ($this->tests as $test) {
+            foreach ($test->getExceptions() as $exception) {
+                $exceptions->add($exception);
+            }
+        }
+
+        return $exceptions;
+    }
+
+    public function getBenchmarks()
+    {
+        $benchmarks = new BenchmarkArray;
+
+        foreach ($this->tests as $test) {
+            foreach ($test->getBenchmarks() as $name => $benchmark) {
+                $benchmarks->add($test->getName() . '::' . $name . '()', $benchmark);
+            }
+        }
+
+        return $benchmarks;
+    }
 }
