@@ -5,6 +5,7 @@ use ArrayIterator;
 use Exception;
 use LogicException;
 use ReflectionClass;
+use RuntimeException;
 use Testes\Assertion\Assertion;
 use Testes\Assertion\Set;
 use Testes\Fixture\FixtureInterface;
@@ -46,10 +47,9 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
     public function run(callable $after = null)
     {
         $this->setUp();
+        $this->setUpFixtures();
 
-        foreach ($this->fixtures as $fixture) {
-            $fixture->setUp();
-        }
+        set_error_handler($this->generateTestErrorHandler());
 
         foreach ($this->methods as $method) {
             try {
@@ -59,10 +59,9 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
             }
         }
 
-        foreach (array_reverse($this->fixtures) as $fixture) {
-            $fixture->tearDown();
-        }
+        restore_error_handler();
 
+        $this->tearDownFixtures();
         $this->tearDown();
 
         if ($after) {
@@ -86,6 +85,24 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
     public function getExceptions()
     {
         return $this->exceptions;
+    }
+
+    public function setUpFixtures()
+    {
+        foreach ($this->fixtures as $fixture) {
+            $fixture->setUp();
+        }
+
+        return $this;
+    }
+
+    public function tearDownFixtures()
+    {
+        foreach (array_reverse($this->fixtures) as $fixture) {
+            $fixture->tearDown();
+        }
+
+        return $this;
     }
 
     public function count()
@@ -130,5 +147,27 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
         }
 
         return array_unique($include);
+    }
+
+    private function generateFixtureSetupErrorHandler()
+    {
+
+    }
+
+    private function generateTestErrorHandler()
+    {
+        
+    }
+
+    private function generateFixtureTearDownErrorHanlder()
+    {
+        
+    }
+
+    private function generateErrorHandler($msg)
+    {
+        return function($errno, $errstr, $errfile, $errline) {
+            throw new RuntimeException($msg . ': ' . $errstr, $errno);
+        };
     }
 }
