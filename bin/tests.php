@@ -6,7 +6,7 @@ use Testes\Autoloader;
 
 $base = __DIR__ . '/..';
 
-require $base . '/vendor/autoload.php';
+require $base . '/src/Testes/Autoloader.php';
 
 Autoloader::register();
 Autoloader::addPath($base . '/tests');
