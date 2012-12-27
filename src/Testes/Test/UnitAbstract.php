@@ -7,7 +7,9 @@ use LogicException;
 use ReflectionClass;
 use RuntimeException;
 use Testes\Assertion\Assertion;
-use Testes\Assertion\Set;
+use Testes\Assertion\AssertionArray;
+use Testes\Benchmark\Benchmark;
+use Testes\Benchmark\BenchmarkArray;
 use Testes\Fixture\FixtureInterface;
 use Testes\RunableAbstract;
 use Testes\RunableInterface;
@@ -16,17 +18,20 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
 {
     private $methods;
 
-    private $assertions = array();
+    private $assertions;
 
-    private $exceptions = array();
+    private $exceptions;
 
     private $fixtures = [];
+
+    private $benchmarks;
 
     public function __construct()
     {
         $this->methods    = $this->getMethods();
-        $this->assertions = new Set;
+        $this->assertions = new AssertionArray;
         $this->exceptions = new ArrayIterator;
+        $this->benchmarks = new BenchmarkArray;
     }
 
     public function setFixture($name, FixtureInterface $fixture)
@@ -49,17 +54,25 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
         $this->setUp();
         $this->setUpFixtures();
 
-        set_error_handler($this->generateTestErrorHandler());
-
         foreach ($this->methods as $method) {
+            set_error_handler($this->generateErrorHandler($method));
+
+            if ($this->benchmarks->has($method)) {
+                $this->benchmarks->get($method)->start();
+            }
+
             try {
                 $this->$method();
             } catch (Exception $e) {
                 $this->exceptions[] = $e;
             }
-        }
 
-        restore_error_handler();
+            if ($this->benchmarks->has($method)) {
+                $this->benchmarks->get($method)->stop();
+            }
+
+            restore_error_handler();
+        }
 
         $this->tearDownFixtures();
         $this->tearDown();
@@ -77,6 +90,12 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
         return $this;
     }
 
+    public function benchmark($method)
+    {
+        $this->benchmarks->add($method, new Benchmark);
+        return $this;
+    }
+
     public function getAssertions()
     {
         return $this->assertions;
@@ -85,6 +104,11 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
     public function getExceptions()
     {
         return $this->exceptions;
+    }
+
+    public function getBenchmarks()
+    {
+        return $this->benchmarks;
     }
 
     public function setUpFixtures()
@@ -149,25 +173,12 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
         return array_unique($include);
     }
 
-    private function generateFixtureSetupErrorHandler()
+    private function generateErrorHandler($method)
     {
+        $msg = sprintf('Error running test "%s::%s()"', get_class($this), $method);
 
-    }
-
-    private function generateTestErrorHandler()
-    {
-        
-    }
-
-    private function generateFixtureTearDownErrorHanlder()
-    {
-        
-    }
-
-    private function generateErrorHandler($msg)
-    {
-        return function($errno, $errstr, $errfile, $errline) {
-            throw new RuntimeException($msg . ': ' . $errstr, $errno);
+        return function($errno, $errstr, $errfile, $errline) use ($msg) {
+            throw new RuntimeException("$msg: \"$errstr\" in $errfile on line $errline.", $errno);
         };
     }
 }

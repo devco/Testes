@@ -6,32 +6,13 @@ use ArrayIterator;
 use IteratorAggregate;
 use Traversable;
 
-class Set implements Countable, IteratorAggregate
+class AssertionArray implements Countable, IteratorAggregate
 {
-    private $assertions;
-    
-    public function __construct(Traversable $assertions = null)
-    {
-        // the internal iterator
-        $this->assertions = new ArrayIterator;
-        
-        // if constructed with assertions add them
-        if ($assertions) {
-            $this->addTraversable($assertions);
-        }
-    }
+    private $assertions = [];
     
     public function add(AssertionInterface $assertion)
     {
         $this->assertions[] = $assertion;
-        return $this;
-    }
-    
-    public function addTraversable(Traversable $assertions)
-    {
-        foreach ($assertions as $assertion) {
-            $this->add($assertion);
-        }
         return $this;
     }
     
@@ -48,32 +29,36 @@ class Set implements Countable, IteratorAggregate
     public function getFailed()
     {
         $failed = new ArrayIterator;
+
         foreach ($this as $assertion) {
             if ($assertion->failed()) {
                 $failed[] = $assertion;
             }
         }
+
         return $failed;
     }
     
     public function getPassed()
     {
         $passed = new ArrayIterator;
+
         foreach ($this as $assertion) {
             if ($assertion->passed()) {
                 $passed[] = $assertion;
             }
         }
+
         return $passed;
     }
     
     public function count()
     {
-        return $this->assertions->count();
+        return count($this->assertions);
     }
     
     public function getIterator()
     {
-        return $this->assertions;
+        return new ArrayIterator($this->assertions);
     }
 }

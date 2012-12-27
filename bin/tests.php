@@ -20,7 +20,7 @@ $coverage->start();
 echo PHP_EOL;
 
 $suite = $finder->run(function($test) {
-    echo $test->getAssertions()->isPassed() && !$test->getExceptions() ? '.' : 'F';
+    echo $test->getAssertions()->isPassed() && !$test->getExceptions()->count() ? '.' : 'F';
 });
 
 echo PHP_EOL . PHP_EOL . sprintf('Ran %d test%s.', count($suite), count($suite) === 1 ? '' : 's');
@@ -30,7 +30,8 @@ $analyzer = $coverage->stop()->addDirectory($base . '/src')->is('\.php$');
 echo PHP_EOL . PHP_EOL . 'Coverage: ' . $analyzer->getPercentTested() . '%' . PHP_EOL . PHP_EOL;
 
 if (count($assertions = $suite->getAssertions()->getFailed())) {
-    echo 'Assertions:' . PHP_EOL;
+    echo 'Assertions' . PHP_EOL;
+    echo '----------' . PHP_EOL;
 
     foreach ($assertions as $ass) {
         echo '  ' . $ass->getTestClass() . ':' . $ass->getTestLine() . ' ' . $ass->getMessage() . PHP_EOL;
@@ -40,10 +41,22 @@ if (count($assertions = $suite->getAssertions()->getFailed())) {
 }
 
 if (count($exceptions = $suite->getExceptions())) {
-    echo 'Exceptions:' . PHP_EOL;
+    echo 'Exceptions' . PHP_EOL;
+    echo '----------' . PHP_EOL;
 
     foreach ($exceptions as $exc) {
         echo '  ' . $exc->getFile() . ':' . $exc->getLine() . ' ' . $exc->getMessage() . PHP_EOL;
+    }
+
+    echo PHP_EOL;
+}
+
+if (count($benchmarks = $suite->getBenchmarks())) {
+    echo 'Benchmarks' . PHP_EOL;
+    echo '----------' . PHP_EOL;
+
+    foreach ($benchmarks as $name => $bench) {
+        echo '  ' . $name . ': ' . round($bench->getTime(), 3) . PHP_EOL;
     }
 
     echo PHP_EOL;
