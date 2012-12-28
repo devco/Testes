@@ -33,7 +33,13 @@ class Suite extends RunableAbstract implements IteratorAggregate, SuiteInterface
 
     public function count()
     {
-        return $this->getTests()->count();
+        $count = 0;
+
+        foreach ($this->getTests() as $test) {
+            $count += $test->count();
+        }
+
+        return $count;
     }
 
     public function addTest(RunableInterface $test)
