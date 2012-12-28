@@ -16,14 +16,14 @@ class AssertionArray implements Countable, IteratorAggregate
         return $this;
     }
     
-    public function isFailed()
-    {
-        return $this->getFailed()->count() > 0;
-    }
-    
     public function isPassed()
     {
         return $this->getFailed()->count() === 0;
+    }
+
+    public function isFailed()
+    {
+        return $this->getFailed()->count() > 0;
     }
     
     public function getFailed()
@@ -31,7 +31,7 @@ class AssertionArray implements Countable, IteratorAggregate
         $failed = new ArrayIterator;
 
         foreach ($this as $assertion) {
-            if ($assertion->failed()) {
+            if ($assertion->isFailed()) {
                 $failed[] = $assertion;
             }
         }
@@ -44,7 +44,7 @@ class AssertionArray implements Countable, IteratorAggregate
         $passed = new ArrayIterator;
 
         foreach ($this as $assertion) {
-            if ($assertion->passed()) {
+            if ($assertion->isPassed()) {
                 $passed[] = $assertion;
             }
         }

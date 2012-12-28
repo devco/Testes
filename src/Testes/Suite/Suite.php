@@ -121,4 +121,14 @@ class Suite extends RunableAbstract implements IteratorAggregate, SuiteInterface
 
         return $benchmarks;
     }
+
+    public function isPassed()
+    {
+        return $this->getAssertions()->isPassed() && !$this->getExceptions()->count();
+    }
+
+    public function isFailed()
+    {
+        return !$this->isPassed();
+    }
 }

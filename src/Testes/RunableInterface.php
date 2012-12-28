@@ -13,6 +13,10 @@ interface RunableInterface extends Countable
 
     public function tearDown();
 
+    public function isPassed();
+
+    public function isFailed();
+
     public function getAssertions();
 
     public function getExceptions();

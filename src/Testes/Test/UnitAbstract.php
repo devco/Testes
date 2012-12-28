@@ -96,6 +96,16 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
         return $this;
     }
 
+    public function isPassed()
+    {
+        return $this->getAssertions()->isPassed() && !$this->getExceptions()->count();
+    }
+
+    public function isFailed()
+    {
+        return !$this->isPassed();
+    }
+
     public function getAssertions()
     {
         return $this->assertions;
