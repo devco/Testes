@@ -5,6 +5,7 @@ use ArrayIterator;
 use Exception;
 use LogicException;
 use ReflectionClass;
+use ReflectionMethod;
 use RuntimeException;
 use Testes\Assertion\Assertion;
 use Testes\Assertion\AssertionArray;
@@ -34,19 +35,19 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
         $this->benchmarks = new BenchmarkArray;
     }
 
-    public function setFixture($name, FixtureInterface $fixture)
+    public function __set($name, FixtureInterface $fixture)
     {
         $this->fixtures[$name] = $fixture;
         return $this;
     }
 
-    public function getFixture($name)
+    public function __get($name)
     {
         if (isset($this->fixtures[$name])) {
             return $this->fixtures[$name];
         }
 
-        throw new LogicException(sprintf('The fixture "%s" does not exist.', $name));
+        throw new LogicException(sprintf('The fixture "%s" does not exist for test "%s".', $name, get_class()));
     }
 
     public function run(callable $after = null)
@@ -121,27 +122,62 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
         return $this->benchmarks;
     }
 
-    public function setUpFixtures()
-    {
-        foreach ($this->fixtures as $fixture) {
-            $fixture->setUp();
-        }
-
-        return $this;
-    }
-
-    public function tearDownFixtures()
-    {
-        foreach (array_reverse($this->fixtures) as $fixture) {
-            $fixture->tearDown();
-        }
-
-        return $this;
-    }
-
     public function count()
     {
         return count($this->methods);
+    }
+
+    private function setUpFixtures()
+    {
+        foreach ($this->fixtures as $fixture) {
+            $this->setUpFixture($fixture);
+        }
+
+        return $this;
+    }
+
+    private function tearDownFixtures()
+    {
+        foreach (array_reverse($this->fixtures) as $fixture) {
+            $this->tearDownFixture($fixture);
+        }
+
+        return $this;
+    }
+
+    private function setUpFixture(FixtureInterface $fixture)
+    {
+        if (!method_exists($fixture, 'setUp')) {
+            return;
+        }
+
+        $method = new ReflectionMethod($fixture, 'setUp');
+        $params = [];
+
+        foreach ($method->getParameters() as $index => $param) {
+            $class = $param->getClass();
+
+            if ($class->implementsInterface('Testes\Fixture\FixtureInterface')) {
+                $class    = $class->newInstance();
+                $params[] = $class;
+                $this->setUpFixture($class);
+            } else {
+                throw new InvalidArgumentException(sprintf(
+                    'Parameter %d for setting up the fixture "%s" must implement interface "Testes\Fixture\FixtureInterface".',
+                    $index,
+                    get_class($fixture)
+                ));
+            }
+        }
+
+        call_user_func_array([$fixture, 'setUp'], $params);
+    }
+
+    private function tearDownFixture(FixtureInterface $fixture)
+    {
+        if (method_exists($fixture, 'tearDown')) {
+            $fixture->tearDown();
+        }
     }
 
     private function getMethods()
