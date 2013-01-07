@@ -11,6 +11,7 @@ use Testes\Assertion\AssertionArray;
 use Testes\Benchmark\Benchmark;
 use Testes\Benchmark\BenchmarkArray;
 use Testes\Fixture\FixtureInterface;
+use Testes\Fixture\Manager;
 use Testes\RunableAbstract;
 use Testes\RunableInterface;
 
@@ -20,18 +21,21 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
 
     private $assertions;
 
+    private $benchmarks;
+
     private $exceptions;
+
+    private $fixtureManager;
 
     private $fixtures = [];
 
-    private $benchmarks;
-
     public function __construct()
     {
-        $this->methods    = $this->getMethods();
-        $this->assertions = new AssertionArray;
-        $this->exceptions = new ArrayIterator;
-        $this->benchmarks = new BenchmarkArray;
+        $this->methods        = $this->getMethods();
+        $this->assertions     = new AssertionArray;
+        $this->benchmarks     = new BenchmarkArray;
+        $this->exceptions     = new ArrayIterator;
+        $this->fixtureManager = new Manager;
     }
 
     public function setFixture($name, FixtureInterface $fixture)
@@ -52,7 +56,8 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
     public function run(callable $after = null)
     {
         $this->setUp();
-        $this->setUpFixtures();
+        $this->fixtureManager->initAll($this->fixtures);
+        $this->fixtureManager->installAll($this->fixtures);
 
         foreach ($this->methods as $method) {
             set_error_handler($this->generateErrorHandler($method));
@@ -74,7 +79,7 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
             restore_error_handler();
         }
 
-        $this->tearDownFixtures();
+        $this->fixtureManager->uninstallAll();
         $this->tearDown();
 
         if ($after) {
@@ -119,24 +124,6 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
     public function getBenchmarks()
     {
         return $this->benchmarks;
-    }
-
-    public function setUpFixtures()
-    {
-        foreach ($this->fixtures as $fixture) {
-            $fixture->setUp();
-        }
-
-        return $this;
-    }
-
-    public function tearDownFixtures()
-    {
-        foreach (array_reverse($this->fixtures) as $fixture) {
-            $fixture->tearDown();
-        }
-
-        return $this;
     }
 
     public function count()
