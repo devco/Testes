@@ -6,5 +6,5 @@ use IteratorAggregate;
 
 interface FixtureInterface extends ArrayAccess, IteratorAggregate
 {
-    
+    public function data();
 }
