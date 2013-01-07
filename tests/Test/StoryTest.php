@@ -4,8 +4,6 @@ namespace Test;
 use Provider\StoryProvider;
 use Testes\Test\StoryAbstract;
 
-require_once __DIR__ . '/../Provider/StoryProvider.php';
-
 class StoryTest extends StoryAbstract
 {
     private $story;

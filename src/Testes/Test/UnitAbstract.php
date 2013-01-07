@@ -5,6 +5,7 @@ use ArrayIterator;
 use Exception;
 use LogicException;
 use ReflectionClass;
+use ReflectionMethod;
 use RuntimeException;
 use Testes\Assertion\Assertion;
 use Testes\Assertion\AssertionArray;
@@ -38,19 +39,19 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
         $this->fixtureManager = new Manager;
     }
 
-    public function setFixture($name, FixtureInterface $fixture)
+    public function __set($name, FixtureInterface $fixture)
     {
         $this->fixtures[$name] = $fixture;
         return $this;
     }
 
-    public function getFixture($name)
+    public function __get($name)
     {
         if (isset($this->fixtures[$name])) {
             return $this->fixtures[$name];
         }
 
-        throw new LogicException(sprintf('The fixture "%s" does not exist.', $name));
+        throw new LogicException(sprintf('The fixture "%s" does not exist for test "%s".', $name, get_class()));
     }
 
     public function run(callable $after = null)

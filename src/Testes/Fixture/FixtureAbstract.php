@@ -1,58 +1,51 @@
 <?php
 
 namespace Testes\Fixture;
+use ArrayIterator;
 
 abstract class FixtureAbstract implements FixtureInterface
 {
     private $data = [];
 
-    protected static $staticData = [];
+    private $required = [];
 
-    public function __construct()
+    public function offsetSet($name, $value)
     {
-        $this->data = static::data();
+        $this->data[$name] = $value;
     }
 
-    public function __get($name)
+    public function offsetGet($name)
     {
         if (isset($this->data[$name])) {
             return $this->data[$name];
         }
     }
 
-    public static function data()
+    public function offsetExists($name)
     {
-        if (isset($this)) {
-            return $this->data;
-        }
-
-        $class = get_called_class();
-
-        if (!isset(static::$staticData[$class])) {
-            static::$staticData[$class] = static::generateData();
-        }
-
-        return static::$staticData[$class];
+        return isset($this->data[$name]);
     }
 
-    public function setUp()
+    public function offsetUnset($name)
     {
-
-    }
-
-    public function tearDown()
-    {
-
-    }
-
-    public static function __callStatic($name, array $args = [])
-    {
-        $data = static::data();
-
-        if (isset($data[$name])) {
-            return $data[$name];
+        if (isset($this->data[$name])) {
+            unset($this->data[$name]);
         }
     }
 
-    abstract protected static function generateData();
+    public function getIterator()
+    {
+        return new ArrayIterator($this->data);
+    }
+
+    public function setData(array $data)
+    {
+        $this->data = $data;
+        return $this;
+    }
+
+    public function getData()
+    {
+        return $this->data;
+    }
 }
