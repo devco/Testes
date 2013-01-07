@@ -6,5 +6,7 @@ use IteratorAggregate;
 
 interface FixtureInterface extends ArrayAccess, IteratorAggregate
 {
-    public function data();
+    public function setData(array $data);
+
+    public function getData();
 }

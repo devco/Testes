@@ -38,7 +38,13 @@ abstract class FixtureAbstract implements FixtureInterface
         return new ArrayIterator($this->data);
     }
 
-    public function data()
+    public function setData(array $data)
+    {
+        $this->data = $data;
+        return $this;
+    }
+
+    public function getData()
     {
         return $this->data;
     }
