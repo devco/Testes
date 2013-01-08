@@ -1,126 +1,185 @@
 <?php
 
 namespace Testes\Fixture;
+use ArrayIterator;
 use InvalidArgumentException;
 use ReflectionMethod;
 use RuntimeException;
 
 class Manager implements ManagerInterface
 {
+    const FLAG_INITIALIZED = 'initialized';
+
+    const FLAG_INSTALLED = 'installed';
+
     const METHOD_INIT = 'init';
 
     const METHOD_INSTALL = 'install';
 
     const METHOD_UNINSTALL = 'uninstall';
 
-    private $installed = [];
+    private $fixtures = [];
+
+    private static $flags = [
+        self::FLAG_INITIALIZED => [],
+        self::FLAG_INSTALLED   => []
+    ];
+
+    private static $methods = [
+        self::METHOD_INIT,
+        self::METHOD_INSTALL,
+        self::METHOD_UNINSTALL
+    ];
 
     public function count()
     {
-        return count($this->installed);
+        return count($this->fixtures);
     }
 
     public function getIterator()
     {
-        return new ArrayIterator($this->installed);
+        return new ArrayIterator($this->fixtures);
     }
 
-    public function init(FixtureInterface $fixture)
+    public function toArray()
     {
-        $this->callMethod($fixture, self::METHOD_INIT);
-        return $this;
+        return $this->fixtures;
     }
 
-    public function install(FixtureInterface $fixture)
+    public function set($name, FixtureInterface $fixture)
     {
-        if (!$this->installed($fixture)) {
-            $this->installed[get_class($fixture)] = $fixture;
-            $this->callMethod($fixture, self::METHOD_INSTALL);
+        $this->validate($fixture);
+
+        $this->fixtures[$name] = $fixture;
+
+        if (!$this->initialized($name)) {
+            $this->flag($name, self::FLAG_INITIALIZED);
+            $this->invoke($name, self::METHOD_INIT);
         }
 
         return $this;
     }
 
-    public function uninstall(FixtureInterface $fixture)
+    public function get($name)
     {
-        if ($this->installed($fixture)) {
-            unset($this->installed[get_class($fixture)]);
-            $this->callMethod($fixture, self::METHOD_UNINSTALL);
+        if (isset($this->fixtures[$name])) {
+            return $this->fixtures[$name];
+        }
+
+        throw new InvalidArgumentException(sprintf('The fixture "%s" does not exist.', $name));
+    }
+
+    public function has($name)
+    {
+        return isset($this->fixtures[$name]);
+    }
+
+    public function remove($name)
+    {
+        if (isset($this->fixtures[$name])) {
+            unset($this->fixtures[$name]);
         }
 
         return $this;
     }
 
-    public function installed(FixtureInterface $fixture)
+    public function install()
     {
-        return in_array(get_class($fixture), $this->installed);
-    }
-
-    public function initAll(array $fixtures)
-    {
-        foreach ($fixtures as $fixture) {
-            $this->init($fixture);
+        foreach ($this->fixtures as $name => $fixture) {
+            if (!$this->installed($name)) {
+                $this->flag($name, self::FLAG_INSTALLED);
+                $this->invoke($name, self::METHOD_INSTALL);
+            }
         }
 
         return $this;
     }
 
-    public function installAll(array $fixtures)
+    public function uninstall()
     {
-        foreach ($fixtures as $fixture) {
-            $this->install($fixture);
+        foreach (array_reverse($this->fixtures) as $name => $fixture) {
+            if ($this->installed($name)) {
+                $this->unflag($name, self::FLAG_INSTALLED);
+                $this->invoke($name, self::METHOD_UNINSTALL);
+            }
         }
 
         return $this;
     }
 
-    public function uninstallAll()
+    public function initialized($name)
     {
-        foreach ($this->installed as $fixture) {
-            $this->uninstall($fixture);
-        }
+        return $this->flagged($name, self::FLAG_INITIALIZED);
+    }
+
+    public function installed($name)
+    {
+        return $this->flagged($name, self::FLAG_INSTALLED);
+    }
+
+    private function flag($name, $as)
+    {
+        self::$flags[$as][get_class($this->fixtures[$name])] = $this->fixtures[$name];
+        return $this;
+    }
+
+    private function unflag($name, $from)
+    {
+        unset(self::$flags[$from][get_class($this->fixtures[$name])]);
+        return $this;
+    }
+
+    private function flagged($name, $as)
+    {
+        return isset(self::$flags[$as][get_class($this->fixtures[$name])]);
+    }
+
+    private function invoke($name, $method)
+    {
+        call_user_func_array(
+            [$this->fixtures[$name], $method],
+            $this->resolveDependencies($name, $method)->toArray()
+        );
 
         return $this;
     }
 
-    private function callMethod(FixtureInterface $fixture, $method)
+    private function resolveDependencies($name, $method)
     {
-        if (!method_exists($fixture, $method)) {
-            throw new RuntimeException(sprintf(
-                'Cannot call method "%s" for fixture "%s" because it does not exist.',
-                $method,
-                get_class($fixture)
-            ));
-        }
-
-        $dependencies = $this->getMethodParams($fixture, $method);
-
-        $this->initAll($dependencies);
-
-        return call_user_func_array([$fixture, $method], $dependencies);
-    }
-
-    private function getMethodParams(FixtureInterface $fixture, $method)
-    {
-        $method = new ReflectionMethod($fixture, $method);
-        $params = [];
+        $fixture = $this->fixtures[$name];
+        $method  = new ReflectionMethod($fixture, $method);
+        $manager = new self;
 
         foreach ($method->getParameters() as $index => $param) {
             $class = $param->getClass();
 
             if ($class->implementsInterface('Testes\Fixture\FixtureInterface')) {
-                $class    = $class->newInstance();
-                $params[] = $class;
+                $manager->set(lcfirst($class->getName()), $class->newInstance());
             } else {
                 throw new InvalidArgumentException(sprintf(
                     'Parameter %d in method "%s" for setting up the fixture "%s" must implement interface "Testes\Fixture\FixtureInterface".',
                     $index,
                     $method,
-                    $fixtureName
+                    $class->getName()
                 ));
             }
         }
 
-        return $params;
+        return $manager;
+    }
+
+    private function validate(FixtureInterface $fixture)
+    {
+        foreach (self::$methods as $method) {
+            if (!method_exists($fixture, $method)) {
+                throw new RuntimeException(sprintf(
+                    'The fixture "%s" must define the method "%s".',
+                    get_class($fixture),
+                    $method
+                ));
+            }
+        }
+
+        return $this;
     }
 }

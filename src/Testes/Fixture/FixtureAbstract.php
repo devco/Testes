@@ -1,51 +1,81 @@
 <?php
 
 namespace Testes\Fixture;
-use ArrayIterator;
+use ArrayObject;
+use Traversable;
 
 abstract class FixtureAbstract implements FixtureInterface
 {
-    private $data = [];
+    private static $data = [];
 
-    private $required = [];
+    public function __construct()
+    {
+        $class = get_called_class();
+
+        if (!isset(self::$data[$class])) {
+            self::$data[$class] = new ArrayObject;
+        }
+    }
 
     public function offsetSet($name, $value)
     {
-        $this->data[$name] = $value;
+        $this->getData()->offsetSet($name, $value);
+        return $this;
     }
 
     public function offsetGet($name)
     {
-        if (isset($this->data[$name])) {
-            return $this->data[$name];
+        $data = $this->getData();
+
+        if ($data->offsetExists($name)) {
+            return $data->offsetGet($name);
         }
     }
 
     public function offsetExists($name)
     {
-        return isset($this->data[$name]);
+        return $this->getData()->offsetExists($name);
     }
 
     public function offsetUnset($name)
     {
-        if (isset($this->data[$name])) {
-            unset($this->data[$name]);
+        $data = $this->getData();
+        
+        if ($data->offsetExists($name)) {
+            $data->offsetUnset($name);
         }
+
+        return $this;
+    }
+
+    public function count()
+    {
+        return $this->getData()->count();
     }
 
     public function getIterator()
     {
-        return new ArrayIterator($this->data);
+        return $this->getData();
     }
 
-    public function setData(array $data)
+    public function setData($data)
     {
-        $this->data = $data;
+        if ($data instanceof Traversable) {
+            $data = iterator_to_array($data);
+        }
+
+        $this->getData()->exchangeArray($data);
+
         return $this;
     }
 
     public function getData()
     {
-        return $this->data;
+        return self::$data[get_called_class()];
+    }
+
+    public function toArray()
+    {
+        return $this->getData()->getArrayCopy();
     }
 }

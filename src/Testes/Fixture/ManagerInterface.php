@@ -6,15 +6,19 @@ use IteratorAggregate;
 
 interface ManagerInterface extends Countable, IteratorAggregate
 {
-    public function init(FixtureInterface $fixture);
+    public function toArray();
 
-    public function install(FixtureInterface $fixture);
+    public function set($name, FixtureInterface $fixture);
 
-    public function uninstall(FixtureInterface $fixture);
+    public function get($name);
 
-    public function installed(FixtureInterface $fixture);
+    public function has($name);
 
-    public function installAll(array $fixtures);
+    public function remove($name);
 
-    public function uninstallAll();
+    public function install();
+
+    public function uninstall();
+
+    public function installed($name);
 }

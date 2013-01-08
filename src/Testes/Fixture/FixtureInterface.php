@@ -2,11 +2,12 @@
 
 namespace Testes\Fixture;
 use ArrayAccess;
+use Countable;
 use IteratorAggregate;
 
-interface FixtureInterface extends ArrayAccess, IteratorAggregate
+interface FixtureInterface extends ArrayAccess, Countable, IteratorAggregate
 {
-    public function setData(array $data);
+    public function setData($data);
 
     public function getData();
 }

@@ -26,39 +26,41 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
 
     private $exceptions;
 
-    private $fixtureManager;
-
-    private $fixtures = [];
+    private $fixtures;
 
     public function __construct()
     {
-        $this->methods        = $this->getMethods();
-        $this->assertions     = new AssertionArray;
-        $this->benchmarks     = new BenchmarkArray;
-        $this->exceptions     = new ArrayIterator;
-        $this->fixtureManager = new Manager;
+        $this->methods    = $this->getMethods();
+        $this->assertions = new AssertionArray;
+        $this->benchmarks = new BenchmarkArray;
+        $this->exceptions = new ArrayIterator;
+        $this->fixtures   = new Manager;
     }
 
     public function __set($name, FixtureInterface $fixture)
     {
-        $this->fixtures[$name] = $fixture;
-        return $this;
+        $this->fixtures->set($name, $fixture);
     }
 
     public function __get($name)
     {
-        if (isset($this->fixtures[$name])) {
-            return $this->fixtures[$name];
-        }
+        return $this->fixtures->get($name);
+    }
 
-        throw new LogicException(sprintf('The fixture "%s" does not exist for test "%s".', $name, get_class()));
+    public function __isset($name)
+    {
+        $this->fixtures->has($name);
+    }
+
+    public function __unset($name)
+    {
+        $this->fixtures->remove($name);
     }
 
     public function run(callable $after = null)
     {
         $this->setUp();
-        $this->fixtureManager->initAll($this->fixtures);
-        $this->fixtureManager->installAll($this->fixtures);
+        $this->fixtures->install();
 
         foreach ($this->methods as $method) {
             set_error_handler($this->generateErrorHandler($method));
@@ -80,7 +82,7 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
             restore_error_handler();
         }
 
-        $this->fixtureManager->uninstallAll();
+        $this->fixtures->uninstall();
         $this->tearDown();
 
         if ($after) {
