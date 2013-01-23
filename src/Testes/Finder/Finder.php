@@ -94,11 +94,6 @@ class Finder implements FinderInterface
         if (!$this->realpathWithNamespace) {
             if ($this->isTestFile($this->pathWithNamespace)) {
                 $this->addFile($this->pathWithNamespace);
-            } else {
-                throw new UnexpectedValueException(sprintf(
-                    'The path "%s" is not a valid test.',
-                    $this->pathWithNamespace
-                ));
             }
         } else {
             $this->addDirectory($this->pathWithNamespace);
