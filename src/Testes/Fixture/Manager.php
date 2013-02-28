@@ -139,12 +139,13 @@ class Manager implements ManagerInterface
             return;
         }
 
-        $this->initialising[$name] = true;
-        $this->initDependencies($name, $fixture);
-
         if (!isset($this->initialised[$name])) {
-            $this->initialised[$name] = true;
+            $this->initialising[$name] = true;
+
+            $this->initDependencies($name, $fixture);
             $this->invoke($fixture, self::METHOD_INIT);
+
+            $this->initialised[$name] = true;
         }
 
         unset($this->initialising[$name]);
@@ -163,16 +164,16 @@ class Manager implements ManagerInterface
             return;
         }
 
-        $this->installing[$name] = true;
-        $this->installDependencies($name, $fixture);
-
         if (!isset($this->installed[$name])) {
-            $this->installed[$name] = true;
+            $this->installing[$name] = true;
+
+            $this->installDependencies($name, $fixture);
             $this->initOne($name, $fixture);
             $this->invoke($fixture, self::METHOD_INSTALL);
-        }
+            unset($this->installing[$name]);
 
-        unset($this->installing[$name]);
+            $this->installed[$name] = true;
+        }
     }
 
     private function installDependencies($name, FixtureInterface $fixture)
@@ -188,17 +189,18 @@ class Manager implements ManagerInterface
             return;
         }
 
-        $this->uninstalling[$name] = true;
-        $this->uninstallDependants($name, $fixture);
+        if (isset($this->uninstalled[$name])) {
+            $this->uninstallDependencies($name, $fixture);
+        } else {
+            $this->uninstalling[$name] = true;
 
-        if (!isset($this->uninstalled[$name])) {
-            $this->uninstalled[$name] = true;
+            $this->uninstallDependants($name, $fixture);
             $this->initOne($name, $fixture);
             $this->invoke($fixture, self::METHOD_UNINSTALL);
-        }
+            unset($this->uninstalling[$name]);
 
-        $this->uninstallDependencies($name, $fixture);
-        unset($this->uninstalling[$name]);
+            $this->uninstalled[$name] = true;
+        }
     }
 
     private function uninstallDependants($name, FixtureInterface $fixture)
