@@ -62,7 +62,11 @@ class Manager implements ManagerInterface
 
         $class = get_class($fixture);
 
-        if (!isset($this->added[$class])) {
+        if (isset($this->added[$class])) {
+            $this->fixtures[$name] = $this->fixtures[$this->added[$class]];
+            unset($this->fixtures[$this->added[$class]]);
+            $this->added[$class] = $name;
+        } else {
             $this->added[$class]   = $name;
             $this->fixtures[$name] = $fixture;
         }
