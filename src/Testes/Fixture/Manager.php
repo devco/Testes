@@ -62,13 +62,11 @@ class Manager implements ManagerInterface
 
         $class = get_class($fixture);
 
-        if (isset($this->added[$class])) {
-            $this->fixtures[$name] = $this->fixtures[$this->added[$class]];
-            unset($this->fixtures[$this->added[$class]]);
-            $this->added[$class] = $name;
-        } else {
-            $this->added[$class]   = $name;
-            $this->fixtures[$name] = $fixture;
+        $this->added[$name]  = $class;
+        $this->added[$class] = $class;
+
+        if (!isset($this->fixtures[$class])) {
+            $this->fixtures[$class] = $fixture;
         }
 
         return $this;
@@ -76,6 +74,10 @@ class Manager implements ManagerInterface
 
     public function get($name)
     {
+        if (isset($this->added[$name])) {
+            $name = $this->added[$name];
+        }
+
         if (isset($this->fixtures[$name])) {
             return $this->fixtures[$name];
         }
@@ -85,14 +87,29 @@ class Manager implements ManagerInterface
 
     public function has($name)
     {
-        return isset($this->fixtures[$name]);
+        return isset($this->added[$name]);
     }
 
     public function remove($name)
     {
-        if (isset($this->fixtures[$name])) {
-            unset($this->fixtures[$name]);
+        if (!isset($this->added[$name])) {
+            return $this;
         }
+
+        $class  = $this->added[$name];
+        $remove = [];
+
+        foreach ($this->added as $k => $v) {
+            if ($class === $v) {
+                $remove[] = $k;
+            }
+        }
+
+        foreach ($remove as $v) {
+            unset($this->added[$v]);
+        }
+
+        unset($this->fixtures[$class]);
 
         return $this;
     }
@@ -146,20 +163,13 @@ class Manager implements ManagerInterface
         if (!isset($this->initialised[$name])) {
             $this->initialising[$name] = true;
 
-            $this->initDependencies($name, $fixture);
+            $this->initDependencies($fixture);
             $this->invoke($fixture, self::METHOD_INIT);
 
             $this->initialised[$name] = true;
         }
 
         unset($this->initialising[$name]);
-    }
-
-    private function initDependencies($name, FixtureInterface $fixture)
-    {
-        foreach ($this->resolveDependencies($fixture, self::METHOD_INIT) as $dependencyName => $dependencyInstance) {
-            $this->initOne($dependencyName, $dependencyInstance);
-        }
     }
 
     private function installOne($name, FixtureInterface $fixture)
@@ -171,19 +181,12 @@ class Manager implements ManagerInterface
         if (!isset($this->installed[$name])) {
             $this->installing[$name] = true;
 
-            $this->installDependencies($name, $fixture);
+            $this->installDependencies($fixture);
             $this->initOne($name, $fixture);
             $this->invoke($fixture, self::METHOD_INSTALL);
             unset($this->installing[$name]);
 
             $this->installed[$name] = true;
-        }
-    }
-
-    private function installDependencies($name, FixtureInterface $fixture)
-    {
-        foreach ($this->resolveDependencies($fixture, self::METHOD_INIT) as $dependencyName => $dependencyInstance) {
-            $this->installOne($dependencyName, $dependencyInstance);
         }
     }
 
@@ -194,11 +197,11 @@ class Manager implements ManagerInterface
         }
 
         if (isset($this->uninstalled[$name])) {
-            $this->uninstallDependencies($name, $fixture);
+            $this->uninstallDependencies($fixture);
         } else {
             $this->uninstalling[$name] = true;
 
-            $this->uninstallDependants($name, $fixture);
+            $this->uninstallDependants($fixture);
             $this->initOne($name, $fixture);
             $this->invoke($fixture, self::METHOD_UNINSTALL);
             unset($this->uninstalling[$name]);
@@ -207,14 +210,28 @@ class Manager implements ManagerInterface
         }
     }
 
-    private function uninstallDependants($name, FixtureInterface $fixture)
+    private function initDependencies(FixtureInterface $fixture)
+    {
+        foreach ($this->resolveDependencies($fixture, self::METHOD_INIT) as $dependencyName => $dependencyInstance) {
+            $this->initOne($dependencyName, $dependencyInstance);
+        }
+    }
+
+    private function installDependencies(FixtureInterface $fixture)
+    {
+        foreach ($this->resolveDependencies($fixture, self::METHOD_INIT) as $dependencyName => $dependencyInstance) {
+            $this->installOne($dependencyName, $dependencyInstance);
+        }
+    }
+
+    private function uninstallDependants(FixtureInterface $fixture)
     {
         foreach ($this->resolveDependants($fixture, self::METHOD_INIT) as $dependencyName => $dependencyInstance) {
             $this->uninstallOne($dependencyName, $dependencyInstance);
         }
     }
 
-    private function uninstallDependencies($name, FixtureInterface $fixture)
+    private function uninstallDependencies(FixtureInterface $fixture)
     {
         foreach ($this->resolveDependencies($fixture, self::METHOD_INIT) as $dependencyName => $dependencyInstance) {
             $this->uninstallOne($dependencyName, $dependencyInstance);
@@ -273,11 +290,11 @@ class Manager implements ManagerInterface
                 ));
             }
 
-            if (!isset($this->added[$dependencyName])) {
+            if (!$this->has($dependencyName)) {
                 $this->set($dependencyName, $dependency->newInstance());
             }
 
-            $dependencies[$this->added[$dependencyName]] = $this->fixtures[$this->added[$dependencyName]];
+            $dependencies[$dependencyName] = $this->get($dependencyName);
         }
 
         return $dependencies;
