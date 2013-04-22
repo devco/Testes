@@ -19,11 +19,6 @@ class Manager implements ManagerInterface
 
     private $dependencies = [];
 
-    /**
-     * @deprecated
-     */
-    private $errors = [];
-
     private $fixtures = [];
 
     private $initialised = [];
@@ -47,14 +42,6 @@ class Manager implements ManagerInterface
     public function count()
     {
         return count($this->fixtures);
-    }
-
-    /**
-     * @deprecated
-     */
-    public function getErrors()
-    {
-        return $this->errors;
     }
 
     public function getIterator()
@@ -311,22 +298,5 @@ class Manager implements ManagerInterface
         }
 
         return $this;
-    }
-
-    /**
-     * @deprecated
-     */
-    private function generateErrorHandler(FixtureInterface $fixture, $method)
-    {
-        return function($errno, $errstr, $errfile, $errline, $errcontext) use ($fixture, $method) {
-            throw new RuntimeException(sprintf(
-                'Error calling "%s" on fixture "%s" because: "%s" in "%s" on line "%s".',
-                $method,
-                get_class($fixture),
-                $errstr,
-                $errfile,
-                $errline
-            ));
-        };
     }
 }
