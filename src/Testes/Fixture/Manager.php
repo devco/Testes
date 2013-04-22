@@ -19,6 +19,9 @@ class Manager implements ManagerInterface
 
     private $dependencies = [];
 
+    /**
+     * @deprecated
+     */
     private $errors = [];
 
     private $fixtures = [];
@@ -46,6 +49,9 @@ class Manager implements ManagerInterface
         return count($this->fixtures);
     }
 
+    /**
+     * @deprecated
+     */
     public function getErrors()
     {
         return $this->errors;
@@ -240,18 +246,10 @@ class Manager implements ManagerInterface
 
     private function invoke(FixtureInterface $fixture, $method)
     {
-        set_error_handler($this->generateErrorHandler($fixture, $method));
-
-        try {
-            call_user_func_array(
-                [$fixture, $method],
-                $this->resolveDependencies($fixture, $method)
-            );
-        } catch (Exception $e) {
-            $this->errors[get_class($fixture) . '::' . $method . '()'] = $e;
-        }
-
-        restore_error_handler();
+        call_user_func_array(
+            [$fixture, $method],
+            $this->resolveDependencies($fixture, $method)
+        );
 
         return $this;
     }
@@ -315,6 +313,9 @@ class Manager implements ManagerInterface
         return $this;
     }
 
+    /**
+     * @deprecated
+     */
     private function generateErrorHandler(FixtureInterface $fixture, $method)
     {
         return function($errno, $errstr, $errfile, $errline, $errcontext) use ($fixture, $method) {
