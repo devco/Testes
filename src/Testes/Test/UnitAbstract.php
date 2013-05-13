@@ -9,6 +9,7 @@ use ReflectionMethod;
 use RuntimeException;
 use Testes\Assertion\Assertion;
 use Testes\Assertion\AssertionArray;
+use Testes\Assertion\AssertionException;
 use Testes\Benchmark\Benchmark;
 use Testes\Benchmark\BenchmarkArray;
 use Testes\Fixture\FixtureInterface;
@@ -33,13 +34,14 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
         $this->methods    = $this->getMethods();
         $this->assertions = new AssertionArray;
         $this->benchmarks = new BenchmarkArray;
-        $this->exceptions = new ArrayIterator;
+        $this->exceptions = new AssertionArray;
         $this->fixtures   = new Manager;
     }
 
     public function __set($name, FixtureInterface $fixture)
     {
         $this->fixtures->set($name, $fixture);
+        $this->fixtures->install();
     }
 
     public function __get($name)
@@ -60,7 +62,6 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
     public function run(callable $after = null)
     {
         $this->setUp();
-        $this->fixtures->install();
 
         foreach ($this->methods as $method) {
             set_error_handler($this->generateErrorHandler($method));
@@ -72,7 +73,7 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
             try {
                 $this->$method();
             } catch (Exception $e) {
-                $this->exceptions[] = $e;
+                $this->exceptions->add(new AssertionException($e));
             }
 
             if ($this->benchmarks->has($method)) {
