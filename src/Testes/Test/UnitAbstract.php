@@ -83,8 +83,8 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
             restore_error_handler();
         }
 
-        $this->fixtures->uninstall();
         $this->tearDown();
+        $this->fixtures->uninstall();
 
         if ($after) {
             $after($this);
