@@ -6,6 +6,8 @@ use Traversable;
 
 abstract class FixtureAbstract implements FixtureInterface
 {
+    self::MAX_INT = 2147483647;
+
     private static $data = [];
 
     public function __construct()
@@ -81,6 +83,6 @@ abstract class FixtureAbstract implements FixtureInterface
 
     public function id()
     {
-        return (string) ((crc32(get_class($this)) - 2147483647) * 1);
+        return (string) ((crc32(get_class($this)) - self::MAX_INT) * 1);
     }
 }
