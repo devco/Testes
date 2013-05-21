@@ -15,7 +15,7 @@ class Manager implements ManagerInterface
 
     const METHOD_UNINSTALL = 'uninstall';
 
-    const METHOD_EXISTS = 'exists';
+    const METHOD_INSTALLED = 'installed';
 
     private $registry = [];
 
@@ -29,7 +29,7 @@ class Manager implements ManagerInterface
         self::METHOD_INIT,
         self::METHOD_INSTALL,
         self::METHOD_UNINSTALL,
-        self::METHOD_EXISTS
+        self::METHOD_INSTALLED
     ];
 
     public function count()
@@ -132,7 +132,7 @@ class Manager implements ManagerInterface
     {
         $this->initOne($fixture);
 
-        if (!$this->invoke($fixture, self::METHOD_EXISTS)) {
+        if (!$this->invoke($fixture, self::METHOD_INSTALLED)) {
             $this->installDependencies($fixture);
             $this->invoke($fixture, self::METHOD_INSTALL);
         }
@@ -142,7 +142,7 @@ class Manager implements ManagerInterface
     {
         $this->initOne($fixture);
 
-        if ($this->invoke($fixture, self::METHOD_EXISTS)) {
+        if ($this->invoke($fixture, self::METHOD_INSTALLED)) {
             $this->uninstallDependants($fixture);
             $this->invoke($fixture, self::METHOD_UNINSTALL);
         }
@@ -233,7 +233,7 @@ class Manager implements ManagerInterface
     private function validate(FixtureInterface $fixture)
     {
         foreach ($this->methods as $method) {
-            if (!method_exists($fixture, $method)) {
+            if (!METHOD_INSTALLED($fixture, $method)) {
                 throw new RuntimeException(sprintf(
                     'The fixture "%s" must define the method "%s".',
                     get_class($fixture),
