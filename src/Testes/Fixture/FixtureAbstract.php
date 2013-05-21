@@ -81,6 +81,6 @@ abstract class FixtureAbstract implements FixtureInterface
 
     public function id()
     {
-        return crc32(get_class($this)) - 2147483647;
+        return (string) ((crc32(get_class($this)) - 2147483647) * 1);
     }
 }
