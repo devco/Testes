@@ -15,7 +15,9 @@ class Manager implements ManagerInterface
 
     const METHOD_UNINSTALL = 'uninstall';
 
-    private $added = [];
+    const METHOD_EXISTS = 'exists';
+
+    private $registry = [];
 
     private $dependencies = [];
 
@@ -23,12 +25,11 @@ class Manager implements ManagerInterface
 
     private $initialised = [];
 
-    private $installed = [];
-
     private $methods = [
         self::METHOD_INIT,
         self::METHOD_INSTALL,
-        self::METHOD_UNINSTALL
+        self::METHOD_UNINSTALL,
+        self::METHOD_EXISTS
     ];
 
     public function count()
@@ -45,13 +46,10 @@ class Manager implements ManagerInterface
     {
         $this->validate($fixture);
 
-        $class = get_class($fixture);
+        $this->registry[$name] = $fixture;
 
-        $this->added[$name]  = $class;
-        $this->added[$class] = $class;
-
-        if (!isset($this->fixtures[$class])) {
-            $this->fixtures[$class] = $fixture;
+        if (!in_array($fixture, $this->fixtures)) {
+            $this->fixtures[get_class($fixture)] = $fixture;
         }
 
         return $this;
@@ -59,44 +57,26 @@ class Manager implements ManagerInterface
 
     public function get($name)
     {
-        if (isset($this->added[$name])) {
-            $name = $this->added[$name];
+        if (isset($this->registry[$name])) {
+            return $this->registry[$name];
         }
 
-        if (isset($this->fixtures[$name])) {
-            return $this->fixtures[$name];
-        }
-
-        throw new InvalidArgumentException(sprintf('The fixture "%s" does not exist.', $name));
+        throw new InvalidArgumentException(sprintf('Cannot get fixture "%s" because it does not exist.', $name));
     }
 
     public function has($name)
     {
-        return isset($this->added[$name]);
+        return isset($this->registry[$name]);
     }
 
     public function remove($name)
     {
-        if (!isset($this->added[$name])) {
+        if (isset($this->registry[$name])) {
+            unset($this->registry[$name]);
             return $this;
         }
 
-        $class  = $this->added[$name];
-        $remove = [];
-
-        foreach ($this->added as $k => $v) {
-            if ($class === $v) {
-                $remove[] = $k;
-            }
-        }
-
-        foreach ($remove as $v) {
-            unset($this->added[$v]);
-        }
-
-        unset($this->fixtures[$class]);
-
-        return $this;
+        throw new InvalidArgumentException(sprintf('Cannot remove fixture "%s" because it does not exist.', $name));
     }
 
     public function install()
@@ -110,7 +90,7 @@ class Manager implements ManagerInterface
 
     public function uninstall()
     {
-        foreach ($this->installed as $fixture) {
+        foreach ($this->fixtures as $fixture) {
             $this->uninstallOne($fixture);
         }
 
@@ -141,10 +121,8 @@ class Manager implements ManagerInterface
 
     private function initOne(FixtureInterface $fixture)
     {
-        $name = get_class($fixture);
-
-        if (!isset($this->initialised[$name])) {
-            $this->initialised[$name] = $fixture;
+        if (!in_array($fixture, $this->initialised)) {
+            $this->initialised[] = $fixture;
             $this->initDependencies($fixture);
             $this->invoke($fixture, self::METHOD_INIT);
         }
@@ -152,19 +130,22 @@ class Manager implements ManagerInterface
 
     private function installOne(FixtureInterface $fixture)
     {
-        $name = get_class($fixture);
+        $this->initOne($fixture);
 
-        if (!isset($this->installed[$name])) {
-            $this->installed[$name] = $fixture;
+        if (!$this->invoke($fixture, self::METHOD_EXISTS)) {
             $this->installDependencies($fixture);
-            $this->initOne($fixture);
             $this->invoke($fixture, self::METHOD_INSTALL);
         }
     }
 
     private function uninstallOne(FixtureInterface $fixture)
     {
+        $this->initOne($fixture);
 
+        if ($this->invoke($fixture, self::METHOD_EXISTS)) {
+            $this->uninstallDependants($fixture);
+            $this->invoke($fixture, self::METHOD_UNINSTALL);
+        }
     }
 
     private function initDependencies(FixtureInterface $fixture)
@@ -188,26 +169,26 @@ class Manager implements ManagerInterface
         }
     }
 
-    private function uninstallDependencies(FixtureInterface $fixture)
-    {
-        foreach ($this->resolveDependencies($fixture) as $dependencyInstance) {
-            $this->uninstallOne($dependencyInstance);
-        }
-    }
-
     private function invoke(FixtureInterface $fixture, $method)
     {
-        call_user_func_array(
-            [$fixture, $method],
-            $this->resolveDependencies($fixture, $method)
-        );
-
-        return $this;
+        try {
+            return call_user_func_array(
+                [$fixture, $method],
+                $this->resolveDependencies($fixture, $method)
+            );
+        } catch (Exception $e) {
+            throw new RuntimeException(sprintf(
+                'Cannot call "%s" on fixture "%s" because: %s',
+                $method,
+                get_class($fixture),
+                $e->getMessage()
+            ));
+        }
     }
 
     private function resolveDependants(FixtureInterface $fixture, $method = self::METHOD_INIT)
     {
-        $name       = $this->added[get_class($fixture)];
+        $name = get_class($fixture);
         $dependants = [];
 
         foreach ($this->fixtures as $dependantName => $dependantInstance) {
@@ -223,11 +204,11 @@ class Manager implements ManagerInterface
 
     private function resolveDependencies(FixtureInterface $fixture, $method = self::METHOD_INIT)
     {
-        $method       = new ReflectionMethod($fixture, $method);
+        $method = new ReflectionMethod($fixture, $method);
         $dependencies = [];
 
         foreach ($method->getParameters() as $param) {
-            $dependency     = $param->getClass();
+            $dependency = $param->getClass();
             $dependencyName = $dependency->getName();
 
             if (!$dependency->implementsInterface('Testes\Fixture\FixtureInterface')) {

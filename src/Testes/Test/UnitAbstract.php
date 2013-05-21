@@ -41,7 +41,6 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
     public function __set($name, FixtureInterface $fixture)
     {
         $this->fixtures->set($name, $fixture);
-        $this->fixtures->install();
     }
 
     public function __get($name)
@@ -62,6 +61,7 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
     public function run(callable $after = null)
     {
         $this->setUp();
+        $this->fixtures->install();
 
         foreach ($this->methods as $method) {
             set_error_handler($this->generateErrorHandler($method));
@@ -140,28 +140,28 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
         $exclude = array();
         $include = array();
         $self    = new ReflectionClass($this);
-        
+
         foreach ($self->getInterfaces() as $interface) {
             foreach ($interface->getMethods() as $method) {
                 $exclude[] = $method->getName();
             }
         }
-        
+
         foreach ($self->getTraits() as $trait) {
             foreach ($trait->getMethods() as $method) {
                 $exclude[] = $method->getName();
             }
         }
-        
+
         foreach ($self->getMethods() as $method) {
             if (!$method->isPublic()) {
                 continue;
             }
-            
+
             if ($method->getDeclaringClass()->getName() !== get_class($this)) {
                 continue;
             }
-    
+
             $method = $method->getName();
 
             if (in_array($method, $exclude)) {

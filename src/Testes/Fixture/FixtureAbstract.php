@@ -40,7 +40,7 @@ abstract class FixtureAbstract implements FixtureInterface
     public function offsetUnset($name)
     {
         $data = $this->getData();
-        
+
         if ($data->offsetExists($name)) {
             $data->offsetUnset($name);
         }
@@ -77,5 +77,10 @@ abstract class FixtureAbstract implements FixtureInterface
     public function toArray()
     {
         return $this->getData()->getArrayCopy();
+    }
+
+    public function id()
+    {
+        return crc32(get_class($this)) - 2147483647;
     }
 }
