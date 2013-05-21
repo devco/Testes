@@ -83,6 +83,6 @@ abstract class FixtureAbstract implements FixtureInterface
 
     public function id()
     {
-        return (string) ((crc32(get_class($this)) - self::MAX_INT) * -1) ?: 1;
+        return abs((crc32(get_class($this)) - self::MAX_INT)) ?: 1;
     }
 }
