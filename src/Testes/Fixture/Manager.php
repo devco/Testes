@@ -233,7 +233,7 @@ class Manager implements ManagerInterface
     private function validate(FixtureInterface $fixture)
     {
         foreach ($this->methods as $method) {
-            if (!METHOD_INSTALLED($fixture, $method)) {
+            if (!method_exists($fixture, $method)) {
                 throw new RuntimeException(sprintf(
                     'The fixture "%s" must define the method "%s".',
                     get_class($fixture),
