@@ -23,7 +23,7 @@ class AssertionException implements AssertionInterface
             }
         }
     }
-    
+
     public function isPassed()
     {
         return false;
@@ -33,37 +33,27 @@ class AssertionException implements AssertionInterface
     {
         return true;
     }
-    
-    public function getMessage()
-    {
-        return $this->exception->getMessage();
-    }
-    
-    public function getCode()
-    {
-        return $this->exception->getCode();
-    }
 
     public function getException()
     {
         return $this->exception;
     }
-    
+
     public function getTestFile()
     {
         return $this->fileLineTrace['file'];
     }
-    
+
     public function getTestLine()
     {
         return $this->fileLineTrace['line'];
     }
-    
+
     public function getTestClass()
     {
         return $this->classMethodTrace['class'];
     }
-    
+
     public function getTestMethod()
     {
         return $this->classMethodTrace['function'];
