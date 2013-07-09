@@ -34,6 +34,16 @@ class AssertionException implements AssertionInterface
         return true;
     }
 
+    public function getMessage()
+    {
+        return $this->exception->getMessage();
+    }
+
+    public function getCode()
+    {
+        return $this->exception->getCode();
+    }
+
     public function getException()
     {
         return $this->exception;
