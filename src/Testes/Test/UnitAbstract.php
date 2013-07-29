@@ -61,7 +61,7 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
     public function run(callable $after = null)
     {
         $this->setUp();
-        $this->fixtures->install();
+        $this->installFixtures();
 
         foreach ($this->methods as $method) {
             set_error_handler($this->generateErrorHandler($method));
@@ -84,7 +84,7 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
         }
 
         $this->tearDown();
-        $this->fixtures->uninstall();
+        $this->uninstallFixtures();
 
         if ($after) {
             $after($this);
@@ -133,6 +133,40 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
     public function count()
     {
         return count($this->methods);
+    }
+
+    private function installFixtures()
+    {
+        try {
+            $this->fixtures->install();
+        } catch (\Exception $e) {
+            throw new RuntimeException(
+                sprintf(
+                    'Cannot install fixtures for test "%s" with message: %s',
+                    get_class($this),
+                    $e->getMessage()
+                ),
+                $e->getCode(),
+                $e
+            );
+        }
+    }
+
+    private function uninstallFixtures()
+    {
+        try {
+            $this->fixtures->uninstall();
+        } catch (\Exception $e) {
+            throw new RuntimeException(
+                sprintf(
+                    'Cannot uninstall fixtures for test "%s" with message: %s',
+                    get_class($this),
+                    $e->getMessage()
+                ),
+                $e->getCode(),
+                $e
+            );
+        }
     }
 
     private function getMethods()
