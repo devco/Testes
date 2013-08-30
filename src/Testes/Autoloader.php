@@ -2,40 +2,20 @@
 
 namespace Testes;
 use InvalidArgumentException;
+use RuntimeException;
 
-/**
- * The autoloader.
- * 
- * @category Autoloading
- * @package  Testes
- * @author   Trey Shugart <treshugart@gmail.com>
- * @license  Copyright (c) 2010 Trey Shugart http://europaphp.org/license
- */
 class Autoloader
 {
-    /**
-     * List of paths.
-     * 
-     * @var array
-     */
+    private static $included = [];
+
     private static $paths = [];
-    
-    /**
-     * Registers autoloading.
-     * 
-     * @return void
-     */
+
     public static function register()
     {
         self::addPath(__DIR__ . '/..');
-        spl_autoload_register(array(get_class(), 'autoload'));
+        spl_autoload_register(array(get_class(), 'load'));
     }
-    
-    /**
-     * Adds an autoload path.
-     * 
-     * @return void
-     */
+
     public static function addPath($path)
     {
         if ($real = realpath($path)) {
@@ -46,20 +26,24 @@ class Autoloader
         throw new InvalidArgumentException(sprintf('The autoload path "%s" does not exist.', $path));
     }
 
-    /**
-     * Autoloads the specified class.
-     * 
-     * @param string $class The class to autoload.
-     * 
-     * @return void
-     */
-    public static function autoload($class)
+    public static function load($class)
     {
+        if (class_exists($class, false)) {
+            return;
+        }
+
         $name = str_replace(array('_', '\\'), DIRECTORY_SEPARATOR, $class) . '.php';
+
         foreach (self::$paths as $path) {
             $pathname = $path . DIRECTORY_SEPARATOR . $name;
+
+            if (in_array($pathname, self::$included)) {
+                throw new RuntimeException(sprintf('The file "%s" has already be included', $pathname));
+            }
+
             if (is_readable($pathname)) {
                 include $pathname;
+                self::$included[] = $pathname;
                 return;
             }
         }

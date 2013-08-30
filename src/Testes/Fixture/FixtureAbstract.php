@@ -6,6 +6,8 @@ use Traversable;
 
 abstract class FixtureAbstract implements FixtureInterface
 {
+    const MAX_INT = 2147483647;
+
     private static $data = [];
 
     public function __construct()
@@ -40,7 +42,7 @@ abstract class FixtureAbstract implements FixtureInterface
     public function offsetUnset($name)
     {
         $data = $this->getData();
-        
+
         if ($data->offsetExists($name)) {
             $data->offsetUnset($name);
         }
@@ -77,6 +79,11 @@ abstract class FixtureAbstract implements FixtureInterface
     public function toArray()
     {
         return $this->getData()->getArrayCopy();
+    }
+
+    public function id()
+    {
+        return abs((crc32(get_class($this)) - self::MAX_INT)) ?: 1;
     }
 
     public function hashId()

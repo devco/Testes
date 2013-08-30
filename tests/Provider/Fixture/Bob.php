@@ -5,15 +5,25 @@ use Testes\Fixture\FixtureAbstract;
 
 class Bob extends FixtureAbstract
 {
-    public function setUp(Address $address)
+    public function init(Address $address)
     {
         $this['id']      = md5(rand() . microtime() . rand());
         $this['name']    = 'Bob Bobberson';
         $this['address'] = $address['id'];
     }
 
-    public function tearDown()
+    public function install()
     {
 
+    }
+
+    public function uninstall()
+    {
+
+    }
+
+    public function installed()
+    {
+        return true;
     }
 }

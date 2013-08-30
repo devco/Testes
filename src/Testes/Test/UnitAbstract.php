@@ -9,6 +9,7 @@ use ReflectionMethod;
 use RuntimeException;
 use Testes\Assertion\Assertion;
 use Testes\Assertion\AssertionArray;
+use Testes\Assertion\AssertionException;
 use Testes\Benchmark\Benchmark;
 use Testes\Benchmark\BenchmarkArray;
 use Testes\Fixture\FixtureInterface;
@@ -33,7 +34,7 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
         $this->methods    = $this->getMethods();
         $this->assertions = new AssertionArray;
         $this->benchmarks = new BenchmarkArray;
-        $this->exceptions = new ArrayIterator;
+        $this->exceptions = new AssertionArray;
         $this->fixtures   = new Manager;
     }
 
@@ -60,7 +61,7 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
     public function run(callable $after = null)
     {
         $this->setUp();
-        $this->fixtures->install();
+        $this->installFixtures();
 
         foreach ($this->methods as $method) {
             set_error_handler($this->generateErrorHandler($method));
@@ -72,7 +73,7 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
             try {
                 $this->$method();
             } catch (Exception $e) {
-                $this->exceptions[] = $e;
+                $this->exceptions->add(new AssertionException($e));
             }
 
             if ($this->benchmarks->has($method)) {
@@ -82,8 +83,8 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
             restore_error_handler();
         }
 
-        $this->fixtures->uninstall();
         $this->tearDown();
+        $this->uninstallFixtures();
 
         if ($after) {
             $after($this);
@@ -134,33 +135,67 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
         return count($this->methods);
     }
 
+    private function installFixtures()
+    {
+        try {
+            $this->fixtures->install();
+        } catch (\Exception $e) {
+            throw new RuntimeException(
+                sprintf(
+                    'Cannot install fixtures for test "%s" with message: %s',
+                    get_class($this),
+                    $e->getMessage()
+                ),
+                $e->getCode(),
+                $e
+            );
+        }
+    }
+
+    private function uninstallFixtures()
+    {
+        try {
+            $this->fixtures->uninstall();
+        } catch (\Exception $e) {
+            throw new RuntimeException(
+                sprintf(
+                    'Cannot uninstall fixtures for test "%s" with message: %s',
+                    get_class($this),
+                    $e->getMessage()
+                ),
+                $e->getCode(),
+                $e
+            );
+        }
+    }
+
     private function getMethods()
     {
         $exclude = array();
         $include = array();
         $self    = new ReflectionClass($this);
-        
+
         foreach ($self->getInterfaces() as $interface) {
             foreach ($interface->getMethods() as $method) {
                 $exclude[] = $method->getName();
             }
         }
-        
+
         foreach ($self->getTraits() as $trait) {
             foreach ($trait->getMethods() as $method) {
                 $exclude[] = $method->getName();
             }
         }
-        
+
         foreach ($self->getMethods() as $method) {
             if (!$method->isPublic()) {
                 continue;
             }
-            
+
             if ($method->getDeclaringClass()->getName() !== get_class($this)) {
                 continue;
             }
-    
+
             $method = $method->getName();
 
             if (in_array($method, $exclude)) {

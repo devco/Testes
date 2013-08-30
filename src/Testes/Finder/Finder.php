@@ -16,60 +16,22 @@ use UnexpectedValueException;
  */
 class Finder implements FinderInterface
 {
-    /**
-     * The test file suffix.
-     * 
-     * @var string
-     */
     const SUFFIX = '.php';
-    
-    /**
-     * The runable interface.
-     * 
-     * @var string
-     */
+
     const SUITE = 'Testes\Suite\SuiteInterface';
-    
-    /**
-     * The runable interface.
-     * 
-     * @var string
-     */
+
     const TEST = 'Testes\Test\TestInterface';
-    
-    /**
-     * The array of suites that were found.
-     * 
-     * @var string
-     */
+
+    private $runableChecks = [];
+
     private $suite;
-    
-    /**
-     * The original path.
-     * 
-     * @var string
-     */
+
     private $path;
-    
-    /**
-     * The namespace to use.
-     * 
-     * @var string
-     */
+
     private $namespace;
-    
-    /**
-     * The fullpath to the finder dir.
-     * 
-     * @var string
-     */
+
     private $pathWithNamespace;
-    
-    /**
-     * The full path to the tests.
-     * 
-     * @var string
-     */
+
     private $realpathWithNamespace;
 
     /**
@@ -190,7 +152,8 @@ class Finder implements FinderInterface
      */
     private function isSuite($class)
     {
-        return $this->isRunable($class) && (new ReflectionClass($class))->implementsInterface(self::SUITE);
+        return $this->isRunable($class)
+            && (new ReflectionClass($class))->implementsInterface(self::SUITE);
     }
     
     /**
@@ -202,7 +165,8 @@ class Finder implements FinderInterface
      */
     private function isTest($class)
     {
-        return $this->isRunable($class) && (new ReflectionClass($class))->implementsInterface(self::TEST);
+        return $this->isRunable($class)
+            && (new ReflectionClass($class))->implementsInterface(self::TEST);
     }
     
     /**
@@ -214,7 +178,12 @@ class Finder implements FinderInterface
      */
     private function isRunable($class)
     {
-        return class_exists($class, true) && (new ReflectionClass($class))->isInstantiable();
+        if (array_key_exists($class, $this->runableChecks)) {
+            return $this->runableChecks[$class];
+        }
+
+        return $this->runableChecks[$class] = class_exists($class, true)
+            && (new ReflectionClass($class))->isInstantiable();
     }
     
     /**
