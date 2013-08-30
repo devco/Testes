@@ -78,4 +78,9 @@ abstract class FixtureAbstract implements FixtureInterface
     {
         return $this->getData()->getArrayCopy();
     }
+
+    public function hashId()
+    {
+        return sha1(get_class($this));
+    }
 }
