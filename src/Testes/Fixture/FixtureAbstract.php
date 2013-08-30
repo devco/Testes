@@ -85,4 +85,9 @@ abstract class FixtureAbstract implements FixtureInterface
     {
         return abs((crc32(get_class($this)) - self::MAX_INT)) ?: 1;
     }
+
+    public function hashId()
+    {
+        return sha1(get_class($this));
+    }
 }
