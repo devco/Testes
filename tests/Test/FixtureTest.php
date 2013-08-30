@@ -20,4 +20,15 @@ class FixtureTest extends UnitAbstract
     {
         $this->assert($this->bob['address'], 'Bob does not have an address.');
     }
+
+    public function hashId()
+    {
+        $this->assert(
+            $this->bob->hashId() === sha1(get_class($this->bob)),
+            sprintf(
+                'Unexpected hashId, expected %s got %s',
+                sha1(get_class($this->bob)), $this->bob->hashId()
+            )
+        );
+    }
 }
