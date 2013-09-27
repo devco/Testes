@@ -14,6 +14,7 @@ use Testes\Benchmark\BenchmarkArray;
 use Testes\Fixture\FixtureInterface;
 use Testes\Fixture\Manager;
 use Testes\RunableAbstract;
+use Testes\Event;
 
 abstract class UnitAbstract extends RunableAbstract implements TestInterface
 {
@@ -25,11 +26,11 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
 
     private $exceptions;
 
-    private $currentMethod;
-
     private $methodExceptions;
 
     private $methodAssertions;
+
+    private $currentMethod;
 
     private $fixtures;
 
@@ -62,12 +63,12 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
         $this->fixtures->remove($name);
     }
 
-    public function run(
-        callable $afterTest = null,
-        callable $beforeMethod = null,
-        callable $afterMethod = null
-    )
+    public function run(Event\Test $event = null)
     {
+        if ($event) {
+            $event->preRun($this);
+        }
+
         $this->setUp();
         $this->fixtures->install();
 
@@ -76,8 +77,8 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
             $this->methodExceptions[$method] = new ArrayIterator;
             $this->methodAssertions[$method] = new AssertionArray;
 
-            if ($beforeMethod) {
-                $beforeMethod($this);
+            if ($event) {
+                $event->preMethod($method, $this);
             }
 
             set_error_handler($this->generateErrorHandler($method));
@@ -90,8 +91,8 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
                 $this->$method();
             } catch (Exception $e) {
                 $assertionException = new AssertionException($e);
-                $this->exceptions->add($assertionException);
-                $this->methodExceptions[$method]->add($assertionException);
+                $this->exceptions->append($assertionException);
+                $this->methodExceptions[$method]->append($assertionException);
             }
 
             if ($this->benchmarks->has($method)) {
@@ -100,16 +101,16 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
 
             restore_error_handler();
 
-            if ($afterMethod) {
-                $afterMethod($this);
+            if ($event) {
+                $event->postMethod($method, $this);
             }
         }
 
         $this->tearDown();
         $this->fixtures->uninstall();
 
-        if ($afterTest) {
-            $afterTest($this);
+        if ($event) {
+            $event->postRun($this);
         }
 
         return $this;
@@ -119,7 +120,7 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
     {
         $assertion = new Assertion($expression, $description, $code);
         $this->assertions->add($assertion);
-        $this->methodAssertions[$this->getCurrentMethod()]->add($assertion);
+        $this->methodAssertions[$this->currentMethod]->add($assertion);
 
         return $this;
     }
@@ -160,11 +161,6 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
     public function getBenchmarks()
     {
         return $this->benchmarks;
-    }
-
-    public function getCurrentMethod()
-    {
-        return $this->currentMethod;
     }
 
     public function count()
