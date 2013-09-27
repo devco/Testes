@@ -6,8 +6,6 @@ use IteratorAggregate;
 
 interface ManagerInterface extends Countable, IteratorAggregate
 {
-    public function toArray();
-
     public function set($name, FixtureInterface $fixture);
 
     public function get($name);
@@ -19,6 +17,4 @@ interface ManagerInterface extends Countable, IteratorAggregate
     public function install();
 
     public function uninstall();
-
-    public function installed($name);
 }

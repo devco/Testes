@@ -45,7 +45,7 @@ if (count($exceptions = $suite->getExceptions())) {
     echo '----------' . PHP_EOL;
 
     foreach ($exceptions as $exc) {
-        echo '  ' . $exc->getFile() . ':' . $exc->getLine() . ' ' . $exc->getMessage() . PHP_EOL;
+        echo '  ' . $exc->getTestFile() . ':' . $exc->getTestLine() . ' ' . $exc->getMessage() . PHP_EOL;
     }
 
     echo PHP_EOL;

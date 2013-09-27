@@ -5,7 +5,7 @@ use Testes\Fixture\FixtureAbstract;
 
 class Address extends FixtureAbstract
 {
-    public function setUp()
+    public function init()
     {
         $this['id']       = md5(rand() . microtime() . rand());
         $this['street']   = '123 Testes Circle';
@@ -15,8 +15,18 @@ class Address extends FixtureAbstract
         $this['country']  = 'USA';
     }
 
-    public function tearDown()
+    public function install()
     {
 
+    }
+
+    public function uninstall()
+    {
+
+    }
+
+    public function installed()
+    {
+        return true;
     }
 }
