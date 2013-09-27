@@ -37,7 +37,7 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
         $this->methods    = $this->getMethods();
         $this->assertions = new AssertionArray;
         $this->benchmarks = new BenchmarkArray;
-        $this->exceptions = new AssertionArray;
+        $this->exceptions = new ArrayIterator;
         $this->fixtures   = new Manager;
     }
 
@@ -68,11 +68,11 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
     )
     {
         $this->setUp();
-        $this->installFixtures();
+        $this->fixtures->install();
 
         foreach ($this->methods as $method) {
             $this->currentMethod = $method;
-            $this->methodExceptions[$method] = new AssertionArray;
+            $this->methodExceptions[$method] = new ArrayIterator;
             $this->methodAssertions[$method] = new AssertionArray;
 
             if ($beforeMethod) {
@@ -105,7 +105,7 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
         }
 
         $this->tearDown();
-        $this->uninstallFixtures();
+        $this->fixtures->uninstall();
 
         if ($afterTest) {
             $afterTest($this);
@@ -117,9 +117,7 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
     public function assert($expression, $description = null, $code = Assertion::DEFAULT_CODE)
     {
         $assertion = new Assertion($expression, $description, $code);
-
         $this->assertions->add($assertion);
-
         $this->methodAssertions[$this->getCurrentMethod()]->add($assertion);
 
         return $this;
