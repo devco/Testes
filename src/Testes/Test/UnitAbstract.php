@@ -8,6 +8,7 @@ use ReflectionClass;
 use RuntimeException;
 use Testes\Assertion\Assertion;
 use Testes\Assertion\AssertionArray;
+use Testes\Assertion\AssertionException;
 use Testes\Benchmark\Benchmark;
 use Testes\Benchmark\BenchmarkArray;
 use Testes\Fixture\FixtureInterface;

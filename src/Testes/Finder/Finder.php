@@ -4,7 +4,7 @@ namespace Testes\Finder;
 use DirectoryIterator;
 use ReflectionClass;
 use Testes\Suite\Suite;
-use UnexpectedValueException;
+use Testes\Event;
 
 /**
  * Default finder implementation.
@@ -77,9 +77,9 @@ class Finder implements FinderInterface
      * 
      * @return Suite
      */
-    public function run(callable $after = null)
+    public function run(Event\Test $event = null)
     {
-        return $this->suite->run($after);
+        return $this->suite->run($event);
     }
     
     /**
