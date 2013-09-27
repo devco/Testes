@@ -1,20 +1,18 @@
 <?php
 
 namespace Testes\Test;
-use ArrayIterator;
+
 use Exception;
-use LogicException;
 use ReflectionClass;
-use ReflectionMethod;
 use RuntimeException;
 use Testes\Assertion\Assertion;
 use Testes\Assertion\AssertionArray;
+use Testes\Assertion\AssertionException;
 use Testes\Benchmark\Benchmark;
 use Testes\Benchmark\BenchmarkArray;
 use Testes\Fixture\FixtureInterface;
 use Testes\Fixture\Manager;
 use Testes\RunableAbstract;
-use Testes\RunableInterface;
 
 abstract class UnitAbstract extends RunableAbstract implements TestInterface
 {
@@ -26,6 +24,12 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
 
     private $exceptions;
 
+    private $currentMethod;
+
+    private $methodExceptions;
+
+    private $methodAssertions;
+
     private $fixtures;
 
     public function __construct()
@@ -33,7 +37,7 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
         $this->methods    = $this->getMethods();
         $this->assertions = new AssertionArray;
         $this->benchmarks = new BenchmarkArray;
-        $this->exceptions = new ArrayIterator;
+        $this->exceptions = new AssertionArray;
         $this->fixtures   = new Manager;
     }
 
@@ -57,12 +61,24 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
         $this->fixtures->remove($name);
     }
 
-    public function run(callable $after = null)
+    public function run(
+        callable $afterTest = null,
+        callable $beforeMethod = null,
+        callable $afterMethod = null
+    )
     {
         $this->setUp();
-        $this->fixtures->install();
+        $this->installFixtures();
 
         foreach ($this->methods as $method) {
+            $this->currentMethod = $method;
+            $this->methodExceptions[$method] = new AssertionArray;
+            $this->methodAssertions[$method] = new AssertionArray;
+
+            if ($beforeMethod) {
+                $beforeMethod($this);
+            }
+
             set_error_handler($this->generateErrorHandler($method));
 
             if ($this->benchmarks->has($method)) {
@@ -72,7 +88,9 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
             try {
                 $this->$method();
             } catch (Exception $e) {
-                $this->exceptions[] = $e;
+                $assertionException = new AssertionException($e);
+                $this->exceptions->add($assertionException);
+                $this->methodExceptions[$method]->add($assertionException);
             }
 
             if ($this->benchmarks->has($method)) {
@@ -80,13 +98,17 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
             }
 
             restore_error_handler();
+
+            if ($afterMethod) {
+                $afterMethod($this);
+            }
         }
 
-        $this->fixtures->uninstall();
         $this->tearDown();
+        $this->uninstallFixtures();
 
-        if ($after) {
-            $after($this);
+        if ($afterTest) {
+            $afterTest($this);
         }
 
         return $this;
@@ -94,7 +116,12 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
 
     public function assert($expression, $description = null, $code = Assertion::DEFAULT_CODE)
     {
-        $this->assertions->add(new Assertion($expression, $description, $code));
+        $assertion = new Assertion($expression, $description, $code);
+
+        $this->assertions->add($assertion);
+
+        $this->methodAssertions[$this->getCurrentMethod()]->add($assertion);
+
         return $this;
     }
 
@@ -107,6 +134,13 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
     public function isPassed()
     {
         return $this->getAssertions()->isPassed() && !$this->getExceptions()->count();
+    }
+
+    public function isMethodPassed($method)
+    {
+        return
+            $this->methodAssertions[$method]->isPassed() ||
+            !isset($this->methodExceptions[$method]);
     }
 
     public function isFailed()
@@ -129,6 +163,11 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
         return $this->benchmarks;
     }
 
+    public function getCurrentMethod()
+    {
+        return $this->currentMethod;
+    }
+
     public function count()
     {
         return count($this->methods);
@@ -139,28 +178,28 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
         $exclude = array();
         $include = array();
         $self    = new ReflectionClass($this);
-        
+
         foreach ($self->getInterfaces() as $interface) {
             foreach ($interface->getMethods() as $method) {
                 $exclude[] = $method->getName();
             }
         }
-        
+
         foreach ($self->getTraits() as $trait) {
             foreach ($trait->getMethods() as $method) {
                 $exclude[] = $method->getName();
             }
         }
-        
+
         foreach ($self->getMethods() as $method) {
             if (!$method->isPublic()) {
                 continue;
             }
-            
+
             if ($method->getDeclaringClass()->getName() !== get_class($this)) {
                 continue;
             }
-    
+
             $method = $method->getName();
 
             if (in_array($method, $exclude)) {
