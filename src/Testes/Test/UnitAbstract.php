@@ -1,11 +1,10 @@
 <?php
 
 namespace Testes\Test;
-use ArrayIterator;
+
 use Exception;
-use LogicException;
+use ArrayIterator;
 use ReflectionClass;
-use ReflectionMethod;
 use RuntimeException;
 use Testes\Assertion\Assertion;
 use Testes\Assertion\AssertionArray;
@@ -15,7 +14,7 @@ use Testes\Benchmark\BenchmarkArray;
 use Testes\Fixture\FixtureInterface;
 use Testes\Fixture\Manager;
 use Testes\RunableAbstract;
-use Testes\RunableInterface;
+use Testes\Event;
 
 abstract class UnitAbstract extends RunableAbstract implements TestInterface
 {
@@ -27,6 +26,12 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
 
     private $exceptions;
 
+    private $methodExceptions;
+
+    private $methodAssertions;
+
+    private $currentMethod;
+
     private $fixtures;
 
     public function __construct()
@@ -34,7 +39,7 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
         $this->methods    = $this->getMethods();
         $this->assertions = new AssertionArray;
         $this->benchmarks = new BenchmarkArray;
-        $this->exceptions = new AssertionArray;
+        $this->exceptions = new ArrayIterator;
         $this->fixtures   = new Manager;
     }
 
@@ -58,12 +63,24 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
         $this->fixtures->remove($name);
     }
 
-    public function run(callable $after = null)
+    public function run(Event\Test $event = null)
     {
+        if ($event) {
+            $event->preRun($this);
+        }
+
         $this->setUp();
-        $this->installFixtures();
+        $this->fixtures->install();
 
         foreach ($this->methods as $method) {
+            $this->currentMethod = $method;
+            $this->methodExceptions[$method] = new ArrayIterator;
+            $this->methodAssertions[$method] = new AssertionArray;
+
+            if ($event) {
+                $event->preMethod($method, $this);
+            }
+
             set_error_handler($this->generateErrorHandler($method));
 
             if ($this->benchmarks->has($method)) {
@@ -73,7 +90,9 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
             try {
                 $this->$method();
             } catch (Exception $e) {
-                $this->exceptions->add(new AssertionException($e));
+                $assertionException = new AssertionException($e);
+                $this->exceptions->append($assertionException);
+                $this->methodExceptions[$method]->append($assertionException);
             }
 
             if ($this->benchmarks->has($method)) {
@@ -81,13 +100,17 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
             }
 
             restore_error_handler();
+
+            if ($event) {
+                $event->postMethod($method, $this);
+            }
         }
 
         $this->tearDown();
-        $this->uninstallFixtures();
+        $this->fixtures->uninstall();
 
-        if ($after) {
-            $after($this);
+        if ($event) {
+            $event->postRun($this);
         }
 
         return $this;
@@ -95,7 +118,10 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
 
     public function assert($expression, $description = null, $code = Assertion::DEFAULT_CODE)
     {
-        $this->assertions->add(new Assertion($expression, $description, $code));
+        $assertion = new Assertion($expression, $description, $code);
+        $this->assertions->add($assertion);
+        $this->methodAssertions[$this->currentMethod]->add($assertion);
+
         return $this;
     }
 
@@ -108,6 +134,13 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
     public function isPassed()
     {
         return $this->getAssertions()->isPassed() && !$this->getExceptions()->count();
+    }
+
+    public function isMethodPassed($method)
+    {
+        return
+            $this->methodAssertions[$method]->isPassed() ||
+            !isset($this->methodExceptions[$method]);
     }
 
     public function isFailed()
@@ -133,40 +166,6 @@ abstract class UnitAbstract extends RunableAbstract implements TestInterface
     public function count()
     {
         return count($this->methods);
-    }
-
-    private function installFixtures()
-    {
-        try {
-            $this->fixtures->install();
-        } catch (\Exception $e) {
-            throw new RuntimeException(
-                sprintf(
-                    'Cannot install fixtures for test "%s" with message: %s',
-                    get_class($this),
-                    $e->getMessage()
-                ),
-                $e->getCode(),
-                $e
-            );
-        }
-    }
-
-    private function uninstallFixtures()
-    {
-        try {
-            $this->fixtures->uninstall();
-        } catch (\Exception $e) {
-            throw new RuntimeException(
-                sprintf(
-                    'Cannot uninstall fixtures for test "%s" with message: %s',
-                    get_class($this),
-                    $e->getMessage()
-                ),
-                $e->getCode(),
-                $e
-            );
-        }
     }
 
     private function getMethods()

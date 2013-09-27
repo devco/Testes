@@ -7,7 +7,7 @@ use Traversable;
 
 interface RunableInterface extends Countable
 {
-    public function run(callable $after = null);
+    public function run(Event\Test $event = null);
 
     public function setUp();
 

@@ -7,6 +7,7 @@ use Testes\Assertion\AssertionArray;
 use Testes\Benchmark\BenchmarkArray;
 use Testes\RunableAbstract;
 use Testes\RunableInterface;
+use Testes\Event;
 use Traversable;
 
 class Suite extends RunableAbstract implements IteratorAggregate, SuiteInterface
@@ -18,12 +19,12 @@ class Suite extends RunableAbstract implements IteratorAggregate, SuiteInterface
         return $this->getTests();
     }
 
-    public function run(callable $after = null)
+    public function run(Event\Test $event = null)
     {
         $this->setUp();
 
         foreach ($this->tests as $test) {
-            $test->run($after);
+            $test->run($event);
         }
 
         $this->tearDown();
@@ -60,7 +61,7 @@ class Suite extends RunableAbstract implements IteratorAggregate, SuiteInterface
     public function getSuites()
     {
         $suites = new ArrayIterator;
-        
+
         foreach ($this->tests as $test) {
             if ($test instanceof SuiteInterface) {
                 foreach ($test->getSuites() as $suite) {
@@ -92,7 +93,7 @@ class Suite extends RunableAbstract implements IteratorAggregate, SuiteInterface
     public function getAssertions()
     {
         $assertions = new AssertionArray;
-        
+
         foreach ($this->tests as $test) {
             foreach ($test->getAssertions() as $assertion) {
                 $assertions->add($assertion);
@@ -105,7 +106,7 @@ class Suite extends RunableAbstract implements IteratorAggregate, SuiteInterface
     public function getExceptions()
     {
         $exceptions = new ArrayIterator;
-        
+
         foreach ($this->tests as $test) {
             foreach ($test->getExceptions() as $exception) {
                 $exceptions->append($exception);

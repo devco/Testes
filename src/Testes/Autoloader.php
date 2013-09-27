@@ -1,6 +1,7 @@
 <?php
 
 namespace Testes;
+
 use InvalidArgumentException;
 use RuntimeException;
 
