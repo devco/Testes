@@ -3,6 +3,7 @@
 use Testes\Coverage\Coverage;
 use Testes\Finder\Finder;
 use Testes\Autoloader;
+use Testes\Event;
 
 $base = __DIR__ . '/..';
 
@@ -11,6 +12,8 @@ require $base . '/src/Testes/Autoloader.php';
 Autoloader::register();
 Autoloader::addPath($base . '/tests');
 Autoloader::addPath($base . '/src');
+Autoloader::addPath($base . '/vendor/devco');
+Autoloader::addPath($base . '/vendor/devco/event-emitter/src');
 
 $coverage = new Coverage;
 $finder   = new Finder($base . '/tests', 'Test');
@@ -19,9 +22,13 @@ $coverage->start();
 
 echo PHP_EOL;
 
-$suite = $finder->run(function($test) {
+$event = new Event\Test;
+
+$event->on('postRun', function($test) {
     echo $test->getAssertions()->isPassed() && !$test->getExceptions()->count() ? '.' : 'F';
 });
+
+$suite = $finder->run($event);
 
 echo PHP_EOL . PHP_EOL . sprintf('Ran %d test%s.', count($suite), count($suite) === 1 ? '' : 's');
 

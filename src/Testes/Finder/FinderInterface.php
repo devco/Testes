@@ -2,8 +2,9 @@
 
 namespace Testes\Finder;
 use IteratorAggregate;
+use Testes\Event;
 
 interface FinderInterface extends IteratorAggregate
 {
-	public function run(callable $after = null);
+    public function run(Event\Test $event = null);
 }
