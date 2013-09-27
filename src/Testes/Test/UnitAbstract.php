@@ -3,6 +3,7 @@
 namespace Testes\Test;
 
 use Exception;
+use ArrayIterator;
 use ReflectionClass;
 use RuntimeException;
 use Testes\Assertion\Assertion;
